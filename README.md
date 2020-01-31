@@ -6,8 +6,9 @@ inferred schema.
 `SoRer` was built with speed and memory efficiency in mind so it can handle
 processing files that are too large to fit into RAM.
 
-On our 2 year old desktop computer, `SoRer` can parse at ~165 MB/s on a test
-field with 8 columns, two of each data type, and populated with random values.
+On our 2 year old desktop computer with a SATA SSD and 4 cores (8 threads), 
+`SoRer` can parse at ~350 MB/s on a test field with 8 columns, two of each 
+data type, and populated with random values.
 
 # Usage
 ## Building SoRer
