@@ -1,0 +1,17 @@
+[package]
+name = "sorer"
+version = "0.1.0"
+authors = ["Thomas Harmon <harmon.t@husky.neu.edu>", "Samedh Gupta <gupta.sam@husky.neu.edu>"]
+edition = "2018"
+default-run = "sorer"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nom = "5.1.0"
+rand = "0.7.3"
+
+[profile.release]
+codegen-units = 1
+panic = 'abort'
+lto = true
