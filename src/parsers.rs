@@ -191,7 +191,7 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 /// `Data::Null` is inserted. If the row has more fields than `schema`, then
 /// the extra fields are discarded.
 ///
-/// Further information on how parsing with [schemas](reader::DataType) can
+/// Further information on how parsing with [schemas](crate::reader::DataType) can
 /// be found [here](../index.html#sor-fields) and
 /// [here](../index.html#rows-that-dont-match-the-schema)
 ///
@@ -270,7 +270,7 @@ pub fn parse_line_with_schema(i: &[u8], schema: &Vec<DataType>) -> Option<Vec<Da
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
