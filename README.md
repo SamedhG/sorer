@@ -35,8 +35,8 @@ The command line arguments are summarized in the below table
 | argument  | value type  | required?  | description  |
 |:-:|:-:|---|---|
 | -f   | \<string\>  | yes  | path to SoR file  |
-| -from  | \<uint\>  | yes  | starting position in file (in bytes)  |
-| -len  | \<uint\>  |  yes | number of bytes to read  |
+| -from  | \<uint\>  | no  | starting position in file (in bytes)  |
+| -len  | \<uint\>  |  no | number of bytes to read  |
 | -print_col_type  | \<uint\>  | depends  | print the type of a column: BOOL, INT, FLOAT, STRING |
 | -print_col_idx  | \<uint\> \<uint\>  | depends  | the first argument is the column, the second is the offset   |
 | -is_missing_idx  | \<uint\> \<uint\>  | depends  | is there a missing field in the specified column offset  |
