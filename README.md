@@ -20,6 +20,8 @@ It also builds the executable for `sorer`, located at
 Tests can be ran by running the command `make test`. The program can be ran
 against a small test file named `sor.txt` by running the command: `make run`.
 
+## SoRer Documentation
+
 Documentation can be built by running the command `make doc`. This builds the
 documentation and copies it to `./doc/` on the host filesystem in this directory.
 This documentation can be viewed by opening `./doc/sorer/index.html` in
