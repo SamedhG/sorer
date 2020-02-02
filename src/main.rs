@@ -19,23 +19,6 @@ fn main() {
     let reader = BufReader::new(f);
     let schema = infer_schema(reader);
 
-    // if argument is `-print_col_type`, we only need to infer the schema, in all other cases
-    // we parse the data into columnar format in memory.
-    match parsed_args.option {
-        Options::PrintColType(n) => {
-            if n >= schema.len() as u64 {
-                println!(
-                    "Error: There are only {} fields in the schema",
-                    schema.len()
-                );
-            } else {
-                println!("{}", format!("{:?}", schema[n as usize]).to_uppercase());
-            }
-            return;
-        }
-        _ => (),
-    }
-
     // number of threads to use
     let num_threads = 8;
 
@@ -152,6 +135,21 @@ fn main() {
                 }
             }
         }
-        _ => unreachable!(),
+        Options::PrintColType(n) => {
+            // note:
+            // if argument is `-print_col_type`, we only need to infer the
+            // schema, but we currently parse the file anyways so that
+            // we dont disregard any -from and -len a arguments.
+            // This can be very easily changed by adding a match right after
+            // the call to `infer_schema` and returning from main if desired.
+            if n >= schema.len() as u64 {
+                println!(
+                    "Error: There are only {} fields in the schema",
+                    schema.len()
+                );
+            } else {
+                println!("{}", format!("{:?}", schema[n as usize]).to_uppercase());
+            }
+        }
     }
 }
