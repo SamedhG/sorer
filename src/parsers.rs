@@ -220,7 +220,7 @@ pub fn parse_line_with_schema(i: &[u8], schema: &Vec<DataType>) -> Option<Vec<Da
     if i.is_empty() {
         return None;
     };
-    let mut result: Vec<Data> = Vec::with_capacity(schema.len());
+    let mut result: Vec<Data> = Vec::with_capacity(schema.len() + 1);
     let mut remaining_input = i;
     for column_type in schema {
         let (x, _) = my_multispace(remaining_input).unwrap();

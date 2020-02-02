@@ -39,7 +39,7 @@ where
     T: BufRead,
 {
     let mut curr_length = 0;
-    let mut parsed_lines = Vec::with_capacity(500);
+    let mut parsed_lines = Vec::with_capacity(501);
     for (i, line) in reader.lines().enumerate() {
         if i == 500 {
             break;
@@ -58,7 +58,7 @@ where
         }
     }
 
-    let mut schema = Vec::with_capacity(curr_length);
+    let mut schema = Vec::with_capacity(curr_length + 1);
     for i in 0..curr_length {
         let mut data_type = DataType::Bool;
         for row in &parsed_lines {
@@ -94,7 +94,7 @@ where
         0
     };
 
-    let mut parsed_data = Vec::with_capacity(schema.len());
+    let mut parsed_data = Vec::with_capacity(schema.len() + 1);
     for _ in 0..schema.len() {
         parsed_data.push(Vec::new());
     }

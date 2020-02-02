@@ -53,20 +53,32 @@ fn main() {
     // each element in the work array is a tuple of (starting index, number of byte for this thread)
     let f: File = File::open(parsed_args.file.clone()).unwrap();
     let mut reader2 = BufReader::new(f);
-    let mut work: Vec<(u64, u64)> = Vec::with_capacity(num_threads);
+    let mut work: Vec<(u64, u64)> = Vec::with_capacity(num_threads + 1);
 
+    // add the first one separately since we want to access the previous thread's
+    // work when in the loop. Since the work of the first thread will call
+    // `read_file(schema, 0, step)` it will not throw away the first line
+    // since from is 0 and will throw away the last line since step > 0
     work.push((parsed_args.from, step));
+
     let mut so_far = parsed_args.from;
     let mut buffer = Vec::new();
 
+    // This loop finds the byte offset for the start of a line
+    // by adding the length of the last line that a previous thread would've
+    // thrown away. The work gets added to the following thread so that
+    // each thread starts at a full line and reads only until the end of a line
     for i in 1..num_threads {
         so_far += step;
-        // advance the reader to this threads starting index
+        // advance the reader to this threads starting index then
+        // find the next newline character
         reader2.seek(SeekFrom::Start(so_far)).unwrap();
         reader2.read_until(b'\n', &mut buffer).unwrap();
         work.push((so_far, step));
 
-        // TODO: explain methodology for this...
+        // Since the previous thread throws away the last line, add the length
+        // of the last line of prev thread to the work of this thread so that
+        // we read all lines.
         work.get_mut(i - 1).unwrap().1 += buffer.len() as u64 + 1;
         buffer.clear();
     }
@@ -77,18 +89,21 @@ fn main() {
         let new_schema = schema.clone();
         let f: File = File::open(parsed_args.file.clone()).unwrap();
         let mut r = BufReader::new(f);
+        // spawn the thread and give it a closure which calls `read_file`
+        // to parse the data into columnar format.
         threads.push(thread::spawn(move || {
             read_file(new_schema, &mut r, w.0, w.1)
         }));
     }
 
     // initialize the resulting columnar data frame
-    let mut parsed_data: Vec<Vec<Data>> = Vec::with_capacity(schema.len());
+    let mut parsed_data: Vec<Vec<Data>> = Vec::with_capacity(schema.len() + 1);
     for _ in 0..schema.len() {
         parsed_data.push(Vec::new());
     }
 
-    // let all the threads finish then combine the parsed data into the columnar data frame
+    // let all the threads finish then combine the parsed data into the
+    // columnar data frame
     for t in threads {
         let mut x = t.join().unwrap();
         for i in 0..schema.len() {
