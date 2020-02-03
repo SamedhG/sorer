@@ -24,13 +24,12 @@ fn main() {
 
     // the total number of bytes to read
     let num_chars = if parsed_args.len == std::u64::MAX {
-        std::fs::metadata(parsed_args.file.clone()).unwrap().len() - parsed_args.from
+        (std::fs::metadata(parsed_args.file.clone()).unwrap().len() - parsed_args.from) as f64
     } else {
-        parsed_args.len
+        parsed_args.len as f64
     };
-
     // each thread will parse this many characters +- some number
-    let step = (num_chars / 8) as u64;
+    let step = (num_chars / num_threads as f64).ceil() as u64;
 
     // setup the work array with the from / len for each thread
     // each element in the work array is a tuple of (starting index, number of byte for this thread)
