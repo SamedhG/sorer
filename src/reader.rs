@@ -19,6 +19,19 @@ pub enum DataType {
     Bool,
 }
 
+/// Represents a column in the dataframe
+#[derive(PartialEq)]
+pub enum Column {
+    /// A Column consisting of either Ints or missing
+    Int(Vec<Option<i64>>),
+    /// A Column consisting of either Bool or missing
+    Bool(Vec<Option<bool>>),
+    /// A Column consisting of either Float or missing
+    Float(Vec<Option<f64>>),
+    /// A Column consisting of either String or missing
+    String(Vec<Option<String>>),
+}
+
 fn get_dominant_data_type(d1: &DataType, d2: &Data) -> DataType {
     match (d1, d2) {
         (_, Data::String(_)) => DataType::String,
@@ -70,13 +83,6 @@ where
         schema.push(data_type);
     }
     schema
-}
-/// Represents a column in the dataframe
-pub enum Column {
-    Int(Vec<Option<i64>>),
-    Bool(Vec<Option<bool>>),
-    Float(Vec<Option<f64>>),
-    String(Vec<Option<String>>)
 }
 
 /// Reads a file (even one too large to fit into memory) according to the given
@@ -139,7 +145,7 @@ where
                         (Data::Null, Column::Int(c)) => c.push(None),
                         (Data::Null, Column::Float(c)) => c.push(None),
                         (Data::Null, Column::String(c)) => c.push(None),
-                        _ => panic!("Parser Failed")
+                        _ => panic!("Parser Failed"),
                     }
                 }
             }
