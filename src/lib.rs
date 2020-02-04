@@ -150,11 +150,7 @@
 //! E.g. The schema: `<int> <bool> <string>` and a row: `<12>`
 //! parses to `<12><><>`
 
-extern crate jemallocator;
 extern crate nom;
-
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 pub mod parsers;
 pub mod reader;

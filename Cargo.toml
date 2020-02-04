@@ -11,8 +11,6 @@ default-run = "sorer"
 nom = "5.1.0"
 rand = "0.7.3"
 
-jemallocator = "0.3.2"
-
 [profile.release]
 codegen-units = 1
 panic = 'abort'
