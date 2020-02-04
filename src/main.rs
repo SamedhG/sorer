@@ -1,4 +1,3 @@
-use sorer::parsers::Data;
 use sorer::reader::*;
 use std::env;
 use std::fs::File;
@@ -99,7 +98,7 @@ fn main() {
                 (Column::Int(c1), Column::Int(c2)) => c1.append(c2),
                 (Column::Float(c1), Column::Float(c2)) => c1.append(c2),
                 (Column::String(c1), Column::String(c2)) => c1.append(c2),
-                _ => panic!("Unexpected result from thread")
+                _ => panic!("Unexpected result from thread"),
             }
         }
     }
@@ -120,35 +119,77 @@ fn main() {
     match parsed_args.option {
         Options::PrintColIdx(n1, n2) => {
             if n1 >= num_cols {
-                println!(
-                    "Error: There are only {} fields in the schema",
-                    num_cols
-                );
+                println!("Error: There are only {} fields in the schema", num_cols);
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
                 match &parsed_data[n1 as usize] {
-                    Column::Bool(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
-                    Column::Int(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
-                    Column::Float(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
-                    Column::String(b) => if let Some(val) = &b[n2 as usize] { println!("\"{}\"", val) } else { println!("Missing") }
+                    Column::Bool(b) => {
+                        if let Some(val) = &b[n2 as usize] {
+                            println!("{}", if *val {1} else {0})
+                        } else {
+                            println!("Missing")
+                        }
+                    }
+                    Column::Int(b) => {
+                        if let Some(val) = &b[n2 as usize] {
+                            println!("{}", val)
+                        } else {
+                            println!("Missing")
+                        }
+                    }
+                    Column::Float(b) => {
+                        if let Some(val) = &b[n2 as usize] {
+                            println!("{}", val)
+                        } else {
+                            println!("Missing")
+                        }
+                    }
+                    Column::String(b) => {
+                        if let Some(val) = &b[n2 as usize] {
+                            println!("\"{}\"", val)
+                        } else {
+                            println!("Missing")
+                        }
+                    }
                 }
             }
         }
         Options::IsMissingIdx(n1, n2) => {
             if n1 >= num_cols {
-                println!(
-                    "Error: There are only {} fields in the schema",
-                    num_cols
-                );
+                println!("Error: There are only {} fields in the schema", num_cols);
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
                 match &parsed_data[n1 as usize] {
-                    Column::Bool(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
-                    Column::Int(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
-                    Column::Float(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
-                    Column::String(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
+                    Column::Bool(b) => {
+                        if let Some(_) = &b[n2 as usize] {
+                            println!("0")
+                        } else {
+                            println!("1")
+                        }
+                    }
+                    Column::Int(b) => {
+                        if let Some(_) = &b[n2 as usize] {
+                            println!("0")
+                        } else {
+                            println!("1")
+                        }
+                    }
+                    Column::Float(b) => {
+                        if let Some(_) = &b[n2 as usize] {
+                            println!("0")
+                        } else {
+                            println!("1")
+                        }
+                    }
+                    Column::String(b) => {
+                        if let Some(_) = &b[n2 as usize] {
+                            println!("0")
+                        } else {
+                            println!("1")
+                        }
+                    }
                 }
             }
         }
@@ -160,14 +201,10 @@ fn main() {
             // This can be very easily changed by adding a match right after
             // the call to `infer_schema` and returning from main if desired.
             if n >= num_cols {
-                println!(
-                    "Error: There are only {} fields in the schema",
-                    num_cols
-                );
+                println!("Error: There are only {} fields in the schema", num_cols);
             } else {
                 println!("{}", format!("{:?}", &schema[n as usize]).to_uppercase());
             }
         }
     }
-    println!("hello");
 }

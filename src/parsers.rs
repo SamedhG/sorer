@@ -1,7 +1,6 @@
 //! A module for parsing raw byte slices into `SoR` data.
 
 extern crate nom;
-use std::fmt;
 use std::str::from_utf8_unchecked;
 
 use nom::branch::alt;
@@ -24,19 +23,6 @@ pub enum Data {
     Float(f64),
     Bool(bool),
     Null,
-}
-
-impl fmt::Display for Data {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Data::String(s) => write!(f, "\"{}\"", s),
-            Data::Int(n) => write!(f, "{}", n),
-            Data::Float(fl) => write!(f, "{}", fl),
-            Data::Bool(true) => write!(f, "1"),
-            Data::Bool(false) => write!(f, "0"),
-            Data::Null => write!(f, "Missing Value"),
-        }
-    }
 }
 
 #[inline(always)]
