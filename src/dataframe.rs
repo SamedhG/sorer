@@ -37,7 +37,7 @@ pub enum Data {
     Null,
 }
 
-/// Print the Data of a Data cell
+/// Print the Data of a Data cell.
 /// The number for Ints and floats
 /// 0 for false
 /// 1 for trues
@@ -58,9 +58,8 @@ impl fmt::Display for Data {
 
 /// This defines different functions that can be called on a DataFrame
 pub trait DataFrame {
-
     /// Generate an empty DataFrame for the given schema
-    fn init(schema : &Vec<DataType>) -> Self;
+    fn init(schema: &Vec<DataType>) -> Self;
 
     /// Reads a file (even one too large to fit into memory) according to the given
     /// `schema` and `options` and turns it into a columnar dataframe.
@@ -80,8 +79,7 @@ pub trait DataFrame {
 
 /// Implements the DataFrame where DataFrame is a Vec<Column>
 impl DataFrame for Vec<Column> {
-
-    fn init(schema : &Vec<DataType>) -> Self {
+    fn init(schema: &Vec<DataType>) -> Self {
         let mut result = Vec::with_capacity(schema.len() + 1);
         for t in schema {
             match t {
@@ -94,7 +92,7 @@ impl DataFrame for Vec<Column> {
         result
     }
 
-    fn from_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Vec<Column>
+    fn from_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Self
     where
         T: BufRead + Seek,
     {
@@ -110,7 +108,7 @@ impl DataFrame for Vec<Column> {
             0
         };
 
-       let mut parsed_data: Vec<Column> = DataFrame::init(&schema);
+        let mut parsed_data: Vec<Column> = DataFrame::init(&schema);
 
         loop {
             let line_len = reader.read_until(b'\n', &mut buffer).unwrap();
@@ -194,31 +192,36 @@ mod tests {
     fn test_read_file() {
         let schema = vec![DataType::String, DataType::Bool];
 
-        let expected_col1 =
-            Column::String(vec!["1".to_string(), "a".to_string(), "1.2".to_string()]);
-        let expected_col2 = vec![Data::Bool(true), Data::Bool(false), Data::Null];
+        let expected_col1 = Column::String(vec![
+            Some("1".to_string()),
+            Some("a".to_string()),
+            Some("1.2".to_string()),
+        ]);
+        let expected_col2 = Column::Bool(vec![Some(true), Some(false), None]);
         let expected = vec![expected_col1, expected_col2];
 
         // Simple case : first nd last line are not discarded
         let mut input = Cursor::new(b"<1><1>\n<a><0>\n<1.2><>");
-        let parsed1 = read_file(schema.clone(), &mut input, 0, 26);
+        let parsed1: Vec<Column> = DataFrame::from_file(schema.clone(), &mut input, 0, 26);
         assert_eq!(parsed1, expected.clone());
 
         // last line is discarded
         let mut larger_input = Cursor::new(b"<1><1>\n<a><0>\n<1.2><>\n<no><1>");
-        let parsed2 = read_file(schema.clone(), &mut larger_input, 0, 27);
+        let parsed2: Vec<Column> = DataFrame::from_file(schema.clone(), &mut larger_input, 0, 27);
         assert_eq!(parsed2, expected.clone());
 
         // first line is discarded
         let mut input_skipped_l1 = Cursor::new(b"<b><1>\n<1><1>\n<a><0>\n<1.2><>");
-        let parsed3 = read_file(schema.clone(), &mut input_skipped_l1, 3, 26);
+        let parsed3: Vec<Column> =
+            DataFrame::from_file(schema.clone(), &mut input_skipped_l1, 3, 26);
         assert_eq!(parsed3, expected.clone());
 
         // Invalid line is discarded
         // Note since parsed lines with schema is correctly tested we do not
         // need to test every possible way a line can be invalid here
         let mut input_with_invalid = Cursor::new(b"<1><1>\n<a><0>\n<c><1.2>\n<1.2><>");
-        let parsed4 = read_file(schema.clone(), &mut input_with_invalid, 0, 32);
+        let parsed4: Vec<Column> =
+            DataFrame::from_file(schema.clone(), &mut input_with_invalid, 0, 32);
         assert_eq!(parsed4, expected.clone());
     }
 }

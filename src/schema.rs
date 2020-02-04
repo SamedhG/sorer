@@ -1,4 +1,4 @@
-//! A module for inferring schemas.
+//! A module for inferring `SoR` schemas.
 use std::io::prelude::*;
 
 use crate::dataframe::Data;

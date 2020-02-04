@@ -124,7 +124,8 @@ fn parse_field(i: &[u8]) -> IResult<&[u8], Data> {
 ///
 /// # Examples
 /// ```
-/// use sorer::parsers::{ Data, parse_line };
+/// use sorer::parsers::parse_line;
+/// use sorer::dataframe::Data;
 /// let i = b"< 1 > < hi >< +2.2 >";
 ///
 /// assert_eq!(Some(vec![Data::Bool(true),
@@ -174,7 +175,8 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 /// # Examples
 /// ```
 /// use sorer::schema::DataType;
-/// use sorer::parsers::{Data, parse_line_with_schema};
+/// use sorer::parsers::parse_line_with_schema;
+/// use sorer::dataframe::Data;
 ///
 /// let i = b"< 1 > < hi >";
 /// let s = vec![DataType::Bool, DataType::String];
