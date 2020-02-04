@@ -80,15 +80,7 @@ fn main() {
     }
 
     // initialize the resulting columnar data frame
-    let mut parsed_data = Vec::with_capacity(schema.len() + 1);
-    for t in &schema {
-        match t {
-            DataType::Bool => parsed_data.push(Column::Bool(Vec::new())),
-            DataType::Int => parsed_data.push(Column::Int(Vec::new())),
-            DataType::Float => parsed_data.push(Column::Float(Vec::new())),
-            DataType::String => parsed_data.push(Column::String(Vec::new())),
-        }
-    }
+    let mut parsed_data : Vec<Column> = DataFrame::init(&schema);
     // let all the threads finish then combine the parsed data into the
     // columnar data frame
     for t in threads {

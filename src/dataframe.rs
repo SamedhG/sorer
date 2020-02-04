@@ -1,11 +1,14 @@
+//! This module defines helper methods to interact with a DataFrame
+//! A DataFrame is a columnar representation of a SOR file and is
+//! represented as a Vec<Column>
+
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
-/// This module defines helper methods to interact with a dataframe
 use std::fmt;
 use std::io::BufRead;
 use std::io::{prelude::*, SeekFrom};
 
-/// Represents a column in the dataframe
+/// Represents a column in the DataFrame
 #[derive(PartialEq, Clone, Debug)]
 pub enum Column {
     /// A Column consisting of either Ints or missing
@@ -22,14 +25,24 @@ pub enum Column {
 /// data itself.
 #[derive(PartialEq, Debug, Clone)]
 pub enum Data {
+    /// A String cell
     String(String),
+    /// A Int cell
     Int(i64),
+    /// A Float Cell
     Float(f64),
+    /// A Boolean Cell
     Bool(bool),
+    /// A Missing Value
     Null,
 }
 
-//Correctly print the data
+/// Print the Data of a Data cell
+/// The number for Ints and floats
+/// 0 for false
+/// 1 for trues
+/// a quotes string for Strings
+/// and "Missing Value" for missing data
 impl fmt::Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -45,7 +58,16 @@ impl fmt::Display for Data {
 
 /// This defines different functions that can be called on a DataFrame
 pub trait DataFrame {
-    /// Read a Sor file and generate the Dataframe
+
+    /// Generate an empty DataFrame for the given schema
+    fn init(schema : &Vec<DataType>) -> Self;
+
+    /// Reads a file (even one too large to fit into memory) according to the given
+    /// `schema` and `options` and turns it into a columnar dataframe.
+    ///
+    /// This is the top level function for using `SoRer` and the one you should be
+    ///  using unless you are trying to extend `SoRer`. There are many intricate
+    /// facets to using `SoRer` so you *must* RTFM [here](../index.html)
     fn from_file<T: BufRead + Seek>(
         schema: Vec<DataType>,
         reader: &mut T,
@@ -58,12 +80,20 @@ pub trait DataFrame {
 
 /// Implements the DataFrame where DataFrame is a Vec<Column>
 impl DataFrame for Vec<Column> {
-    /// Reads a file (even one too large to fit into memory) according to the given
-    /// `schema` and `options` and turns it into a columnar dataframe.
-    ///
-    /// This is the top level function for using `SoRer` and the one you should be
-    ///  using unless you are trying to extend `SoRer`. There are many intricate
-    /// facets to using `SoRer` so you *must* RTFM [here](../index.html)
+
+    fn init(schema : &Vec<DataType>) -> Self {
+        let mut result = Vec::with_capacity(schema.len() + 1);
+        for t in schema {
+            match t {
+                DataType::Bool => result.push(Column::Bool(Vec::new())),
+                DataType::Int => result.push(Column::Int(Vec::new())),
+                DataType::Float => result.push(Column::Float(Vec::new())),
+                DataType::String => result.push(Column::String(Vec::new())),
+            }
+        }
+        result
+    }
+
     fn from_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Vec<Column>
     where
         T: BufRead + Seek,
@@ -80,15 +110,7 @@ impl DataFrame for Vec<Column> {
             0
         };
 
-        let mut parsed_data = Vec::with_capacity(schema.len() + 1);
-        for t in &schema {
-            match t {
-                DataType::Bool => parsed_data.push(Column::Bool(Vec::new())),
-                DataType::Int => parsed_data.push(Column::Int(Vec::new())),
-                DataType::Float => parsed_data.push(Column::Float(Vec::new())),
-                DataType::String => parsed_data.push(Column::String(Vec::new())),
-            }
-        }
+       let mut parsed_data: Vec<Column> = DataFrame::init(&schema);
 
         loop {
             let line_len = reader.read_until(b'\n', &mut buffer).unwrap();
