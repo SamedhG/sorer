@@ -79,58 +79,76 @@ fn main() {
     }
 
     // initialize the resulting columnar data frame
-    let mut parsed_data: Vec<Vec<Data>> = Vec::with_capacity(schema.len() + 1);
-    for _ in 0..schema.len() {
-        parsed_data.push(Vec::new());
+    let mut parsed_data = Vec::with_capacity(schema.len() + 1);
+    for t in &schema {
+        match t {
+            DataType::Bool => parsed_data.push(Column::Bool(Vec::new())),
+            DataType::Int => parsed_data.push(Column::Int(Vec::new())),
+            DataType::Float => parsed_data.push(Column::Float(Vec::new())),
+            DataType::String => parsed_data.push(Column::String(Vec::new())),
+        }
     }
-
     // let all the threads finish then combine the parsed data into the
     // columnar data frame
     for t in threads {
         let mut x = t.join().unwrap();
-        for i in 0..schema.len() {
-            parsed_data
-                .get_mut(i)
-                .unwrap()
-                .append(x.get_mut(i).unwrap());
+        let iter = parsed_data.iter_mut().zip(x.iter_mut());
+        for (complete, partial) in iter {
+            match (complete, partial) {
+                (Column::Bool(c1), Column::Bool(c2)) => c1.append(c2),
+                (Column::Int(c1), Column::Int(c2)) => c1.append(c2),
+                (Column::Float(c1), Column::Float(c2)) => c1.append(c2),
+                (Column::String(c1), Column::String(c2)) => c1.append(c2),
+                _ => panic!("Unexpected result from thread")
+            }
         }
     }
 
     // metadata about the parsed file
     let num_cols = parsed_data.len() as u64;
     let num_lines = if num_cols != 0 {
-        parsed_data[0].len() as u64
+        (match &parsed_data[0] {
+            Column::Bool(b) => b.len(),
+            Column::Int(b) => b.len(),
+            Column::Float(b) => b.len(),
+            Column::String(b) => b.len(),
+        }) as u64
     } else {
         0
     };
-
     // Retrieve and return the requested data
     match parsed_args.option {
         Options::PrintColIdx(n1, n2) => {
             if n1 >= num_cols {
                 println!(
                     "Error: There are only {} fields in the schema",
-                    schema.len()
+                    num_cols
                 );
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                println!("{}", parsed_data[n1 as usize][n2 as usize]);
+                match &parsed_data[n1 as usize] {
+                    Column::Bool(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
+                    Column::Int(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
+                    Column::Float(b) => if let Some(val) = &b[n2 as usize] { println!("{}", val) } else { println!("Missing") }
+                    Column::String(b) => if let Some(val) = &b[n2 as usize] { println!("\"{}\"", val) } else { println!("Missing") }
+                }
             }
         }
         Options::IsMissingIdx(n1, n2) => {
             if n1 >= num_cols {
                 println!(
                     "Error: There are only {} fields in the schema",
-                    schema.len()
+                    num_cols
                 );
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                if parsed_data[n1 as usize][n2 as usize] == Data::Null {
-                    println!("{}", 1);
-                } else {
-                    println!("{}", 0);
+                match &parsed_data[n1 as usize] {
+                    Column::Bool(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
+                    Column::Int(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
+                    Column::Float(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
+                    Column::String(b) => if let Some(_) = &b[n2 as usize] { println!("0") } else { println!("1") }
                 }
             }
         }
@@ -141,14 +159,15 @@ fn main() {
             // we dont disregard any -from and -len a arguments.
             // This can be very easily changed by adding a match right after
             // the call to `infer_schema` and returning from main if desired.
-            if n >= schema.len() as u64 {
+            if n >= num_cols {
                 println!(
                     "Error: There are only {} fields in the schema",
-                    schema.len()
+                    num_cols
                 );
             } else {
-                println!("{}", format!("{:?}", schema[n as usize]).to_uppercase());
+                println!("{}", format!("{:?}", &schema[n as usize]).to_uppercase());
             }
         }
     }
+    println!("hello");
 }

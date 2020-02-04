@@ -71,6 +71,13 @@ where
     }
     schema
 }
+/// Represents a column in the dataframe
+pub enum Column {
+    Int(Vec<Option<i64>>),
+    Bool(Vec<Option<bool>>),
+    Float(Vec<Option<f64>>),
+    String(Vec<Option<String>>)
+}
 
 /// Reads a file (even one too large to fit into memory) according to the given
 /// `schema` and `options` and turns it into a columnar dataframe.
@@ -78,7 +85,7 @@ where
 /// This is the top level function for using `SoRer` and the one you should be
 ///  using unless you are trying to extend `SoRer`. There are many intricate
 /// facets to using `SoRer` so you *must* RTFM [here](../index.html)
-pub fn read_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Vec<Vec<Data>>
+pub fn read_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Vec<Column>
 where
     T: BufRead + Seek,
 {
@@ -95,8 +102,13 @@ where
     };
 
     let mut parsed_data = Vec::with_capacity(schema.len() + 1);
-    for _ in 0..schema.len() {
-        parsed_data.push(Vec::new());
+    for t in &schema {
+        match t {
+            DataType::Bool => parsed_data.push(Column::Bool(Vec::new())),
+            DataType::Int => parsed_data.push(Column::Int(Vec::new())),
+            DataType::Float => parsed_data.push(Column::Float(Vec::new())),
+            DataType::String => parsed_data.push(Column::String(Vec::new())),
+        }
     }
 
     loop {
@@ -116,9 +128,20 @@ where
                 continue;
             }
             Some(data) => {
-                data.iter()
-                    .enumerate()
-                    .for_each(|(i, d)| parsed_data.get_mut(i).unwrap().push(d.clone()));
+                let iter = data.iter().zip(parsed_data.iter_mut());
+                for (d, col) in iter {
+                    match (d, col) {
+                        (Data::Bool(b), Column::Bool(c)) => c.push(Some(*b)),
+                        (Data::Int(i), Column::Int(c)) => c.push(Some(*i)),
+                        (Data::Float(f), Column::Float(c)) => c.push(Some(*f)),
+                        (Data::String(s), Column::String(c)) => c.push(Some(s.clone())),
+                        (Data::Null, Column::Bool(c)) => c.push(None),
+                        (Data::Null, Column::Int(c)) => c.push(None),
+                        (Data::Null, Column::Float(c)) => c.push(None),
+                        (Data::Null, Column::String(c)) => c.push(None),
+                        _ => panic!("Parser Failed")
+                    }
+                }
             }
         }
         buffer.clear();
