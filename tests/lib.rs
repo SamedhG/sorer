@@ -1,5 +1,5 @@
-use sorer::parsers::Data;
-use sorer::schema::{infer_schema, read_file, DataType};
+use sorer::schema::*;
+use sorer::dataframe::*;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -41,9 +41,9 @@ fn is_missing_idx() {
         let s = infer_schema(schema_reader);
         let f2 = File::open(Path::new(t.0)).unwrap();
         let mut reader = BufReader::new(f2);
-        let data_frame = read_file(s, &mut reader, 0, std::u64::MAX);
+        let data_frame : Vec<Column> = DataFrame::from_file(s, &mut reader, 0, std::u64::MAX);
 
-        assert_eq!(data_frame[t.1][t.2] == Data::Null, t.3);
+        assert_eq!(data_frame.get(t.1, t.2) == Data::Null, t.3);
     }
 
     // special case
@@ -53,9 +53,9 @@ fn is_missing_idx() {
     let s = infer_schema(schema_reader);
     let f2 = File::open(Path::new("tests/1.sor")).unwrap();
     let mut reader = BufReader::new(f2);
-    let data_frame = read_file(s, &mut reader, 1, 74);
+    let data_frame : Vec<Column> = DataFrame::from_file(s, &mut reader, 1, 74);
 
-    assert_eq!(data_frame[0][0] == Data::Null, false);
+    assert_eq!(data_frame.get(0, 0) == Data::Null, false);
 }
 
 // NOTE: This test is ignored by default since running `cargo test` uses the debug build, which is
@@ -84,9 +84,9 @@ fn print_col_idx() {
         let s = infer_schema(reader);
         let f2 = File::open(Path::new(t.0)).unwrap();
         let mut reader = BufReader::new(f2);
-        let data_frame = read_file(s, &mut reader, 0, std::u64::MAX);
+        let data_frame : Vec<Column> = DataFrame::from_file(s, &mut reader, 0, std::u64::MAX);
 
-        assert_eq!(data_frame[t.1][t.2], t.3);
+        assert_eq!(data_frame.get(t.1, t.2), t.3);
     }
     // special case:
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -print_col_idx 0 6
