@@ -1,4 +1,6 @@
-use sorer::reader::*;
+use sorer::dataframe::*;
+use sorer::schema::*;
+
 use std::env;
 use std::fs::File;
 use std::io::SeekFrom;
@@ -73,7 +75,7 @@ fn main() {
         // spawn the thread and give it a closure which calls `read_file`
         // to parse the data into columnar format.
         threads.push(thread::spawn(move || {
-            read_file(new_schema, &mut r, w.0, w.1)
+            DataFrame::from_file(new_schema, &mut r, w.0, w.1)
         }));
     }
 
@@ -90,7 +92,7 @@ fn main() {
     // let all the threads finish then combine the parsed data into the
     // columnar data frame
     for t in threads {
-        let mut x = t.join().unwrap();
+        let mut x: Vec<Column> = t.join().unwrap();
         let iter = parsed_data.iter_mut().zip(x.iter_mut());
         for (complete, partial) in iter {
             match (complete, partial) {
@@ -123,36 +125,7 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                match &parsed_data[n1 as usize] {
-                    Column::Bool(b) => {
-                        if let Some(val) = &b[n2 as usize] {
-                            println!("{}", if *val {1} else {0})
-                        } else {
-                            println!("Missing")
-                        }
-                    }
-                    Column::Int(b) => {
-                        if let Some(val) = &b[n2 as usize] {
-                            println!("{}", val)
-                        } else {
-                            println!("Missing")
-                        }
-                    }
-                    Column::Float(b) => {
-                        if let Some(val) = &b[n2 as usize] {
-                            println!("{}", val)
-                        } else {
-                            println!("Missing")
-                        }
-                    }
-                    Column::String(b) => {
-                        if let Some(val) = &b[n2 as usize] {
-                            println!("\"{}\"", val)
-                        } else {
-                            println!("Missing")
-                        }
-                    }
-                }
+                println!("{}", parsed_data.get(n1, n2));
             }
         }
         Options::IsMissingIdx(n1, n2) => {
@@ -161,35 +134,10 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                match &parsed_data[n1 as usize] {
-                    Column::Bool(b) => {
-                        if let Some(_) = &b[n2 as usize] {
-                            println!("0")
-                        } else {
-                            println!("1")
-                        }
-                    }
-                    Column::Int(b) => {
-                        if let Some(_) = &b[n2 as usize] {
-                            println!("0")
-                        } else {
-                            println!("1")
-                        }
-                    }
-                    Column::Float(b) => {
-                        if let Some(_) = &b[n2 as usize] {
-                            println!("0")
-                        } else {
-                            println!("1")
-                        }
-                    }
-                    Column::String(b) => {
-                        if let Some(_) = &b[n2 as usize] {
-                            println!("0")
-                        } else {
-                            println!("1")
-                        }
-                    }
+                if parsed_data.get(n1, n2) == Data::Null {
+                    println!("{}", 1);
+                } else {
+                    println!("{}", 0);
                 }
             }
         }

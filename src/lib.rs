@@ -152,5 +152,6 @@
 
 extern crate nom;
 
+pub mod dataframe;
 pub mod parsers;
-pub mod reader;
+pub mod schema;

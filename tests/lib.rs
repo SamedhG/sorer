@@ -1,5 +1,5 @@
 use sorer::parsers::Data;
-use sorer::reader::{infer_schema, read_file, DataType};
+use sorer::schema::{infer_schema, read_file, DataType};
 
 use std::fs::File;
 use std::io::BufReader;

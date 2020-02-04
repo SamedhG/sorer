@@ -12,18 +12,8 @@ use nom::number::complete::double;
 use nom::sequence::{delimited, preceded, terminated, tuple};
 use nom::IResult;
 
-use crate::reader::DataType;
-
-/// An enumeration of the possible `SoR` data types, that also contains the
-/// data itself.
-#[derive(PartialEq, Debug, Clone)]
-pub enum Data {
-    String(String),
-    Int(i64),
-    Float(f64),
-    Bool(bool),
-    Null,
-}
+use crate::dataframe::Data;
+use crate::schema::DataType;
 
 #[inline(always)]
 fn parse_bool(i: &[u8]) -> IResult<&[u8], Data> {
@@ -183,7 +173,7 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 ///
 /// # Examples
 /// ```
-/// use sorer::reader::DataType;
+/// use sorer::schema::DataType;
 /// use sorer::parsers::{Data, parse_line_with_schema};
 ///
 /// let i = b"< 1 > < hi >";
