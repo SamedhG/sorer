@@ -2,7 +2,6 @@
 
 extern crate nom;
 use nom::error::ErrorKind;
-use nom::Err;
 
 use std::str::from_utf8_unchecked;
 
@@ -51,7 +50,7 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
         .parse::<i64>();
     match num {
         Ok(n) => Ok((remaining_input, Data::Int(n * multiplier))),
-        Err(x) => Err(nom::Err::Error((i, ErrorKind::Digit)))
+        Err(_) => Err(nom::Err::Error((i, ErrorKind::Digit)))
     }
 }
 
