@@ -7,7 +7,8 @@ run:
 	docker run -it -v `pwd`:/sorer sorer ./sorer -f sor.txt -print_col_type 0   
 
 test:
-	docker run sorer cargo test
+	docker run -it -v `pwd`:/sorer sorer cargo test
+
 clean:
 	docker run -it -v `pwd`:/sorer sorer cargo clean
 	- rm sorer
