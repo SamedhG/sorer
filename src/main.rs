@@ -72,7 +72,7 @@ fn main() {
         let new_schema = schema.clone();
         let f: File = File::open(parsed_args.file.clone()).unwrap();
         let mut r = BufReader::new(f);
-        // spawn the thread and give it a closure which calls `read_file`
+        // spawn the thread and give it a closure which calls `from_file`
         // to parse the data into columnar format.
         threads.push(thread::spawn(move || {
             DataFrame::from_file(new_schema, &mut r, w.0, w.1)
@@ -80,7 +80,7 @@ fn main() {
     }
 
     // initialize the resulting columnar data frame
-    let mut parsed_data : Vec<Column> = DataFrame::init(&schema);
+    let mut parsed_data: Vec<Column> = DataFrame::init(&schema);
     // let all the threads finish then combine the parsed data into the
     // columnar data frame
     for t in threads {
