@@ -1,6 +1,9 @@
 //! A module for parsing raw byte slices into `SoR` data.
 
 extern crate nom;
+use nom::error::ErrorKind;
+use nom::Err;
+
 use std::str::from_utf8_unchecked;
 
 use nom::branch::alt;
@@ -45,10 +48,11 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
     };
     // not unsafe because the spec guarantees only c++ characters in any field
     let num = unsafe { from_utf8_unchecked(number) }
-        .parse::<i64>()
-        .unwrap()
-        * multiplier;
-    Ok((remaining_input, Data::Int(num)))
+        .parse::<i64>();
+    match num {
+        Ok(n) => Ok((remaining_input, Data::Int(n * multiplier))),
+        Err(x) => Err(nom::Err::Error((i, ErrorKind::Digit)))
+    }
 }
 
 #[inline(always)]
