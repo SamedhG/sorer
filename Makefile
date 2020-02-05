@@ -9,6 +9,9 @@ run:
 test:
 	docker run -it -v `pwd`:/sorer sorer cargo test
 
+bash:
+	docker run -it -v `pwd`:/sorer sorer bash
+
 clean:
 	docker run -it -v `pwd`:/sorer sorer cargo clean
 	- rm sorer
