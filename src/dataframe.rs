@@ -92,7 +92,12 @@ impl DataFrame for Vec<Column> {
         result
     }
 
-    fn from_file<T>(schema: Vec<DataType>, reader: &mut T, from: u64, len: u64) -> Self
+    fn from_file<T>(
+        schema: Vec<DataType>,
+        reader: &mut T,
+        from: u64,
+        len: u64,
+    ) -> Self
     where
         T: BufRead + Seek,
     {
@@ -112,11 +117,8 @@ impl DataFrame for Vec<Column> {
 
         loop {
             let line_len = reader.read_until(b'\n', &mut buffer).unwrap();
-            if line_len == 0 {
-                break;
-            }
             so_far += line_len as u64;
-            if so_far >= len {
+            if line_len == 0 || so_far >= len {
                 break;
             }
 
@@ -130,10 +132,16 @@ impl DataFrame for Vec<Column> {
                     let iter = data.iter().zip(parsed_data.iter_mut());
                     for (d, col) in iter {
                         match (d, col) {
-                            (Data::Bool(b), Column::Bool(c)) => c.push(Some(*b)),
+                            (Data::Bool(b), Column::Bool(c)) => {
+                                c.push(Some(*b))
+                            }
                             (Data::Int(i), Column::Int(c)) => c.push(Some(*i)),
-                            (Data::Float(f), Column::Float(c)) => c.push(Some(*f)),
-                            (Data::String(s), Column::String(c)) => c.push(Some(s.clone())),
+                            (Data::Float(f), Column::Float(c)) => {
+                                c.push(Some(*f))
+                            }
+                            (Data::String(s), Column::String(c)) => {
+                                c.push(Some(s.clone()))
+                            }
                             (Data::Null, Column::Bool(c)) => c.push(None),
                             (Data::Null, Column::Int(c)) => c.push(None),
                             (Data::Null, Column::Float(c)) => c.push(None),
@@ -202,16 +210,19 @@ mod tests {
 
         // Simple case : first nd last line are not discarded
         let mut input = Cursor::new(b"<1><1>\n<a><0>\n<1.2><>");
-        let parsed1: Vec<Column> = DataFrame::from_file(schema.clone(), &mut input, 0, 26);
+        let parsed1: Vec<Column> =
+            DataFrame::from_file(schema.clone(), &mut input, 0, 26);
         assert_eq!(parsed1, expected.clone());
 
         // last line is discarded
         let mut larger_input = Cursor::new(b"<1><1>\n<a><0>\n<1.2><>\n<no><1>");
-        let parsed2: Vec<Column> = DataFrame::from_file(schema.clone(), &mut larger_input, 0, 27);
+        let parsed2: Vec<Column> =
+            DataFrame::from_file(schema.clone(), &mut larger_input, 0, 27);
         assert_eq!(parsed2, expected.clone());
 
         // first line is discarded
-        let mut input_skipped_l1 = Cursor::new(b"<b><1>\n<1><1>\n<a><0>\n<1.2><>");
+        let mut input_skipped_l1 =
+            Cursor::new(b"<b><1>\n<1><1>\n<a><0>\n<1.2><>");
         let parsed3: Vec<Column> =
             DataFrame::from_file(schema.clone(), &mut input_skipped_l1, 3, 26);
         assert_eq!(parsed3, expected.clone());
@@ -219,9 +230,14 @@ mod tests {
         // Invalid line is discarded
         // Note since parsed lines with schema is correctly tested we do not
         // need to test every possible way a line can be invalid here
-        let mut input_with_invalid = Cursor::new(b"<1><1>\n<a><0>\n<c><1.2>\n<1.2><>");
-        let parsed4: Vec<Column> =
-            DataFrame::from_file(schema.clone(), &mut input_with_invalid, 0, 32);
+        let mut input_with_invalid =
+            Cursor::new(b"<1><1>\n<a><0>\n<c><1.2>\n<1.2><>");
+        let parsed4: Vec<Column> = DataFrame::from_file(
+            schema.clone(),
+            &mut input_with_invalid,
+            0,
+            32,
+        );
         assert_eq!(parsed4, expected.clone());
     }
 }

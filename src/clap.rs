@@ -51,7 +51,9 @@ impl From<Vec<String>> for ProgArgs {
                         let n = args[i].parse::<u64>().unwrap();
                         opt = Some(Options::PrintColType(n));
                     }
-                    Some(a) => panic!(format!("Option was already set to {:?}", a)),
+                    Some(a) => {
+                        panic!(format!("Option was already set to {:?}", a))
+                    }
                 }
             }
             if args[i] == "-print_col_idx" {
@@ -63,7 +65,9 @@ impl From<Vec<String>> for ProgArgs {
                         let n2 = args[i].parse::<u64>().unwrap();
                         opt = Some(Options::PrintColIdx(n1, n2));
                     }
-                    Some(a) => panic!(format!("Option was already set to {:?}", a)),
+                    Some(a) => {
+                        panic!(format!("Option was already set to {:?}", a))
+                    }
                 }
             }
             if args[i] == "-is_missing_idx" {
@@ -75,7 +79,9 @@ impl From<Vec<String>> for ProgArgs {
                         let n2 = args[i].parse::<u64>().unwrap();
                         opt = Some(Options::IsMissingIdx(n1, n2));
                     }
-                    Some(a) => panic!(format!("Option was already set to {:?}", a)),
+                    Some(a) => {
+                        panic!(format!("Option was already set to {:?}", a))
+                    }
                 }
             }
         }

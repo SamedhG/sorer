@@ -38,7 +38,8 @@ fn parse_delimited_bool(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
-    let (remaining_input, (sign, number)) = tuple((opt(alt((tag("+"), tag("-")))), digit1))(i)?;
+    let (remaining_input, (sign, number)) =
+        tuple((opt(alt((tag("+"), tag("-")))), digit1))(i)?;
     let multiplier = match sign {
         None => 1,
         Some(b"+") => 1,
@@ -46,11 +47,10 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
         _ => unreachable!(),
     };
     // not unsafe because the spec guarantees only c++ characters in any field
-    let num = unsafe { from_utf8_unchecked(number) }
-        .parse::<i64>();
+    let num = unsafe { from_utf8_unchecked(number) }.parse::<i64>();
     match num {
         Ok(n) => Ok((remaining_input, Data::Int(n * multiplier))),
-        Err(_) => Err(nom::Err::Error((i, ErrorKind::Digit)))
+        Err(_) => Err(nom::Err::Error((i, ErrorKind::Digit))),
     }
 }
 
@@ -197,7 +197,10 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 /// Since `SoR` files are guaranteed to only contain valid C++ strings, and thus only valid `utf-8`,
 /// then this constraint only applies to consumers of the crate and not users of the `SoRer`
 /// executable.
-pub fn parse_line_with_schema(i: &[u8], schema: &Vec<DataType>) -> Option<Vec<Data>> {
+pub fn parse_line_with_schema(
+    i: &[u8],
+    schema: &Vec<DataType>,
+) -> Option<Vec<Data>> {
     if i.is_empty() {
         return None;
     };
@@ -216,14 +219,17 @@ pub fn parse_line_with_schema(i: &[u8], schema: &Vec<DataType>) -> Option<Vec<Da
                 result.push(d);
             }
             _ => match &column_type {
-                DataType::String => match parse_delimited_string(remaining_input) {
-                    Ok((x, d)) => {
-                        result.push(d);
-                        remaining_input = x;
+                DataType::String => {
+                    match parse_delimited_string(remaining_input) {
+                        Ok((x, d)) => {
+                            result.push(d);
+                            remaining_input = x;
+                        }
+                        _ => return None,
                     }
-                    _ => return None,
-                },
-                DataType::Float => match parse_delimited_float(remaining_input) {
+                }
+                DataType::Float => match parse_delimited_float(remaining_input)
+                {
                     Ok((x, d)) => {
                         result.push(d);
                         remaining_input = x;
@@ -357,7 +363,10 @@ mod tests {
             DataType::String,
             DataType::Bool,
         ];
-        let line = parse_line_with_schema(b" < hello > <123> <123.123> <> <1> ", &schema);
+        let line = parse_line_with_schema(
+            b" < hello > <123> <123.123> <> <1> ",
+            &schema,
+        );
         assert_eq!(
             line,
             Some(vec![
@@ -369,8 +378,10 @@ mod tests {
             ])
         );
 
-        let string_variants =
-            parse_line_with_schema(b"< \"hi world\" > <+2> <1.1> <\"  hi \"> <0> ", &schema);
+        let string_variants = parse_line_with_schema(
+            b"< \"hi world\" > <+2> <1.1> <\"  hi \"> <0> ",
+            &schema,
+        );
         assert_eq!(
             string_variants,
             Some(vec![
@@ -382,8 +393,10 @@ mod tests {
             ])
         );
 
-        let string_variants2 =
-            parse_line_with_schema(b"< \"<>\" > <-2> <1.19999> <<> <0> ", &schema);
+        let string_variants2 = parse_line_with_schema(
+            b"< \"<>\" > <-2> <1.19999> <<> <0> ",
+            &schema,
+        );
         assert_eq!(
             string_variants2,
             Some(vec![
@@ -395,7 +408,8 @@ mod tests {
             ])
         );
 
-        let parse_schema_precedence = parse_line_with_schema(b"<1> <1> <1.0> <1> <1>", &schema);
+        let parse_schema_precedence =
+            parse_line_with_schema(b"<1> <1> <1.0> <1> <1>", &schema);
         assert_eq!(
             parse_schema_precedence,
             Some(vec![
@@ -412,13 +426,15 @@ mod tests {
     fn test_parse_line_with_schema_and_missing_fields() {
         let schema = vec![DataType::String, DataType::Int, DataType::Float];
 
-        let parse_explicit_missing = parse_line_with_schema(b"<> <-1> <>", &schema);
+        let parse_explicit_missing =
+            parse_line_with_schema(b"<> <-1> <>", &schema);
         assert_eq!(
             parse_explicit_missing,
             Some(vec![Data::Null, Data::Int(-1), Data::Null,])
         );
 
-        let implicit_missing_at_end = parse_line_with_schema(b"<bye> <223> ", &schema);
+        let implicit_missing_at_end =
+            parse_line_with_schema(b"<bye> <223> ", &schema);
         assert_eq!(
             implicit_missing_at_end,
             Some(vec![
@@ -428,8 +444,10 @@ mod tests {
             ])
         );
 
-        let too_many_fields_not_discarded =
-            parse_line_with_schema(b"<bye> <223> <1.123> <> <1> <extra_field>", &schema);
+        let too_many_fields_not_discarded = parse_line_with_schema(
+            b"<bye> <223> <1.123> <> <1> <extra_field>",
+            &schema,
+        );
         assert_eq!(
             too_many_fields_not_discarded,
             Some(vec![
@@ -449,11 +467,14 @@ mod tests {
             DataType::String,
             DataType::Bool,
         ];
-        let bad_string =
-            parse_line_with_schema(b"< hi world > <+2> <1.1> <\"  hi \"> <0> ", &schema);
+        let bad_string = parse_line_with_schema(
+            b"< hi world > <+2> <1.1> <\"  hi \"> <0> ",
+            &schema,
+        );
         assert_eq!(bad_string, None);
 
-        let bad_row_wrong_types = parse_line_with_schema(b"<world> <1.2> <123> <1> <0>", &schema);
+        let bad_row_wrong_types =
+            parse_line_with_schema(b"<world> <1.2> <123> <1> <0>", &schema);
         assert_eq!(bad_row_wrong_types, None);
 
         let empty = parse_line_with_schema(b"", &schema);

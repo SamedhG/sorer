@@ -19,8 +19,11 @@ pub enum DataType {
 }
 
 // Get the dominant dat type b.w to comparable types
-fn get_dominant_data_type(d1: &DataType, d2: &Data) -> DataType {
-    match (d1, d2) {
+fn get_dominant_data_type(
+    cur_dominant_type: &DataType,
+    other_type: &Data,
+) -> DataType {
+    match (cur_dominant_type, other_type) {
         (_, Data::String(_)) => DataType::String,
         (DataType::String, _) => DataType::String,
         (_, Data::Float(_)) => DataType::Float,
@@ -89,7 +92,8 @@ mod tests {
             vec![DataType::Int, DataType::String, DataType::Bool]
         );
 
-        let uses_row_w_most_fields = Cursor::new(b"<1>\n<hello><0>\n<1.1><0><2>");
+        let uses_row_w_most_fields =
+            Cursor::new(b"<1>\n<hello><0>\n<1.1><0><2>");
         let schema2 = infer_schema(uses_row_w_most_fields);
         assert_eq!(
             schema2,

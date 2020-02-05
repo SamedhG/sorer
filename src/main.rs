@@ -25,7 +25,8 @@ fn main() {
 
     // the total number of bytes to read
     let num_chars = if parsed_args.len == std::u64::MAX {
-        (std::fs::metadata(parsed_args.file.clone()).unwrap().len() - parsed_args.from) as f64
+        (std::fs::metadata(parsed_args.file.clone()).unwrap().len()
+            - parsed_args.from) as f64
     } else {
         parsed_args.len as f64
     };
@@ -113,7 +114,10 @@ fn main() {
     match parsed_args.option {
         Options::PrintColIdx(n1, n2) => {
             if n1 >= num_cols {
-                println!("Error: There are only {} fields in the schema", num_cols);
+                println!(
+                    "Error: There are only {} fields in the schema",
+                    num_cols
+                );
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
@@ -122,7 +126,10 @@ fn main() {
         }
         Options::IsMissingIdx(n1, n2) => {
             if n1 >= num_cols {
-                println!("Error: There are only {} fields in the schema", num_cols);
+                println!(
+                    "Error: There are only {} fields in the schema",
+                    num_cols
+                );
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
@@ -141,9 +148,15 @@ fn main() {
             // This can be very easily changed by adding a match right after
             // the call to `infer_schema` and returning from main if desired.
             if n >= num_cols {
-                println!("Error: There are only {} fields in the schema", num_cols);
+                println!(
+                    "Error: There are only {} fields in the schema",
+                    num_cols
+                );
             } else {
-                println!("{}", format!("{:?}", &schema[n as usize]).to_uppercase());
+                println!(
+                    "{}",
+                    format!("{:?}", &schema[n as usize]).to_uppercase()
+                );
             }
         }
     }
