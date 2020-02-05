@@ -48,11 +48,11 @@
 //! When `<val>` in `-len <val>` is greater than 0, then the file is read
 //! up until the last complete line.
 //!
-//! After running `make build`, run the following command to start bash inside
-//! the Docker image: `docker run -it -v `pwd`:/sorer sorer bash`. This will take you to `/sorer`
-//! and start bash inside the image. Then, run the program.
-//!
-//! E.g.: `./sorer -f sor.txt -from 0 -len 100000 -print_col_idx 0 0`
+//! After running `make build`, running `make bash` will mount the current
+//! the current directory to the docker container and start bash. If you
+//! want to test any large files, you should do `make build` first, then copy
+//! the files into this directory, then run `make bash`. Once you're in bash,
+//! you can interact with `sorer` as usual:
 //!
 //!
 //! # SoR Files
