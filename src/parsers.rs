@@ -123,7 +123,7 @@ fn parse_field(i: &[u8]) -> IResult<&[u8], Data> {
 /// Returning `Some` if `i` was a valid sor row, `None` otherwise. It parses
 /// using the most conservative precedence possible. Types `bool`  are parsed
 /// first, then `int`, then `float`, then `string`.
-/// If a field is invalid, returns a None.
+/// If a field is invalid, returns a `None`.
 ///
 /// # Examples
 /// ```

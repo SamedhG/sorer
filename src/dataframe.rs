@@ -1,6 +1,6 @@
 //! This module defines helper methods to interact with a DataFrame
 //! A DataFrame is a columnar representation of a SOR file and is
-//! represented as a Vec<Column>
+//! represented as a `Vec<Column>`
 
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
