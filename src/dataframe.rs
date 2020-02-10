@@ -73,6 +73,7 @@ pub trait DataFrame {
         from: u64,
         len: u64,
     ) -> Self;
+
     /// Get the (i,j) element from the DataFrame
     fn get(&self, i: u64, j: u64) -> Data;
 }

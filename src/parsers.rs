@@ -146,8 +146,6 @@ fn parse_field(i: &[u8]) -> IResult<&[u8], Data> {
 /// then this constraint only applies to consumers of the crate and not users of the `SoRer`
 /// executable.
 pub fn parse_line(i: &[u8]) -> Option<Vec<Data>> {
-    // note: multispace0 parses newline characters as well
-    // so if we optimize the file reading need to change this
     let (remaining_input, data) =
         many0(delimited(multispace0, parse_field, multispace0))(i).unwrap();
     if remaining_input != b"" {
