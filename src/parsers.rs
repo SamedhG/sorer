@@ -18,6 +18,16 @@ use crate::dataframe::Data;
 use crate::schema::DataType;
 
 #[inline(always)]
+fn left_angle_bracket(i: &[u8]) -> IResult<&[u8], &[u8]> {
+    terminated(tag("<"), multispace0)(i)
+}
+
+#[inline(always)]
+fn right_angle_bracket(i: &[u8]) -> IResult<&[u8], &[u8]> {
+    preceded(multispace0, tag(">"))(i)
+}
+
+#[inline(always)]
 fn parse_bool(i: &[u8]) -> IResult<&[u8], Data> {
     let (remaining_input, b) = alt((tag("1"), tag("0")))(i)?;
     match b {
@@ -29,11 +39,7 @@ fn parse_bool(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_delimited_bool(i: &[u8]) -> IResult<&[u8], Data> {
-    delimited(
-        terminated(tag("<"), multispace0),
-        parse_bool,
-        preceded(multispace0, tag(">")),
-    )(i)
+    delimited(left_angle_bracket, parse_bool, right_angle_bracket)(i)
 }
 
 #[inline(always)]
@@ -56,11 +62,7 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_delimited_int(i: &[u8]) -> IResult<&[u8], Data> {
-    delimited(
-        terminated(tag("<"), multispace0),
-        parse_int,
-        preceded(multispace0, tag(">")),
-    )(i)
+    delimited(left_angle_bracket, parse_int, right_angle_bracket)(i)
 }
 
 #[inline(always)]
@@ -74,11 +76,7 @@ fn parse_string(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_delimited_string(i: &[u8]) -> IResult<&[u8], Data> {
-    delimited(
-        terminated(tag("<"), multispace0),
-        parse_string,
-        preceded(multispace0, tag(">")),
-    )(i)
+    delimited(left_angle_bracket, parse_string, right_angle_bracket)(i)
 }
 
 #[inline(always)]
@@ -88,11 +86,7 @@ fn parse_float(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_delimited_float(i: &[u8]) -> IResult<&[u8], Data> {
-    delimited(
-        terminated(tag("<"), multispace0),
-        parse_float,
-        preceded(multispace0, tag(">")),
-    )(i)
+    delimited(left_angle_bracket, parse_float, right_angle_bracket)(i)
 }
 
 #[inline(always)]
@@ -102,11 +96,7 @@ fn parse_null(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_delimited_null(i: &[u8]) -> IResult<&[u8], Data> {
-    delimited(
-        terminated(tag("<"), multispace0),
-        parse_null,
-        preceded(multispace0, tag(">")),
-    )(i)
+    delimited(left_angle_bracket, parse_null, right_angle_bracket)(i)
 }
 
 fn parse_field(i: &[u8]) -> IResult<&[u8], Data> {
