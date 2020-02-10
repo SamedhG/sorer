@@ -169,7 +169,7 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 /// `Data::Null` is inserted. If the row has more fields than `schema`, then
 /// the extra fields are discarded.
 ///
-/// Further information on how parsing with [schemas](crate::reader::DataType) can
+/// Further information on how parsing with [schemas](crate::schema) can
 /// be found [here](../index.html#sor-fields) and
 /// [here](../index.html#rows-that-dont-match-the-schema)
 ///
