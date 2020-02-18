@@ -70,7 +70,12 @@ fn parse_string(i: &[u8]) -> IResult<&[u8], Data> {
     // not unsafe because the spec guarantees only c++ characters in any field
     map(
         alt((delimited(tag("\""), is_not("\""), tag("\"")), is_not(" >"))),
-        |s| Data::String(String::from(unsafe { from_utf8_unchecked(s) })),
+        |s: &[u8]| {
+            Data::String(match s {
+                b"\"\"" => String::from(""),
+                _ => String::from(unsafe { from_utf8_unchecked(s) }),
+            })
+        },
     )(i)
 }
 
@@ -252,6 +257,10 @@ mod tests {
     fn test_parse_string() {
         let x = parse_string(b"\"hello world\"");
         assert_eq!(x.unwrap().1, Data::String("hello world".to_string()));
+        let x = parse_string(b"\" \"");
+        assert_eq!(x.unwrap().1, Data::String(" ".to_string()));
+        let x = parse_string(b"\"\"");
+        assert_eq!(x.unwrap().1, Data::String("".to_string()));
         let x = parse_string(b"hello");
         assert_eq!(x.unwrap().1, Data::String("hello".to_string()));
         let x = parse_string(b"hello world");
