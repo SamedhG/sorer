@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Thomas Harmon <harmon.t@husky.neu.edu>", "Samedh Gupta <gupta.sam@husky.neu.edu>"]
 edition = "2018"
 default-run = "sorer"
+license = "MIT"
+description = "A schema on read file parser"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
