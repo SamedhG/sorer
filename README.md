@@ -82,6 +82,7 @@ each row must be separated by the newline character, "\n".
 Each row is a sequence of fields, each field starting with "<" and ending
 with ">". Spaces around delimiters are ignored.
 
+
 # SoR Fields
 A field can be either missing a value, or contain a value of one of four
  SoR types:
