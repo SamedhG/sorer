@@ -1,8 +1,8 @@
 //! A module for inferring `SoR` schemas.
-use std::io::prelude::*;
-
 use crate::dataframe::Data;
 use crate::parsers::parse_line;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 /// A plain enumeration of the possible data types used in `SoR`, this one
 /// without its accompanying value.
@@ -32,6 +32,13 @@ fn get_dominant_data_type(
         (DataType::Int, _) => DataType::Int,
         _ => DataType::Bool,
     }
+}
+
+pub fn infer_schema_from_file(fname: String) -> Vec<DataType> {
+    
+    let f: File = File::open(fname).unwrap();
+    let reader = BufReader::new(f);
+    infer_schema(reader)
 }
 
 /// Infers the schema of the file with the path from `options.file`.
