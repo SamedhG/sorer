@@ -32,7 +32,7 @@ fn is_missing_idx() {
         let schema = infer_schema_from_file(t.0.clone());
         let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
-        assert_eq!(get(data_frame, t.1, t.2) == Data::Null, t.3);
+        assert_eq!(get(&data_frame, t.1, t.2) == Data::Null, t.3);
     }
 
     // special case
@@ -40,7 +40,7 @@ fn is_missing_idx() {
     let schema = infer_schema_from_file(String::from("tests/1.sor"));
     let data_frame = from_file(String::from("tests/1.sor"), schema, 1, 74, 8);
 
-    assert_eq!(get(data_frame, 0, 0) == Data::Null, false);
+    assert_eq!(get(&data_frame, 0, 0) == Data::Null, false);
 }
 
 // NOTE: This test is ignored by default since running `cargo test` uses the debug build, which is
@@ -82,7 +82,7 @@ fn print_col_idx() {
         let schema = infer_schema_from_file(t.0.clone());
         let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
-        assert_eq!(get(data_frame, t.1, t.2), t.3);
+        assert_eq!(get(&data_frame, t.1, t.2), t.3);
     }
     // special case:
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -print_col_idx 0 6

@@ -166,7 +166,7 @@ pub fn from_file(
 }
 
 /// Get the (i,j) element from the DataFrame
-pub fn get(d: Vec<Column>, i: usize, j: usize) -> Data {
+pub fn get(d: &Vec<Column>, i: usize, j: usize) -> Data {
     match &d[i] {
         Column::Bool(b) => {
             if let Some(val) = &b[j] {

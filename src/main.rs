@@ -47,7 +47,7 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                println!("{}", get(dataframe, n1, n2));
+                println!("{}", get(&dataframe, n1, n2));
             }
         }
         Options::IsMissingIdx(n1, n2) => {
@@ -59,7 +59,7 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                if get(dataframe, n1, n2) == Data::Null {
+                if get(&dataframe, n1, n2) == Data::Null {
                     println!("{}", 1);
                 } else {
                     println!("{}", 0);
