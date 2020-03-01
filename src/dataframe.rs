@@ -166,31 +166,31 @@ pub fn from_file(
 }
 
 /// Get the (i,j) element from the DataFrame
-pub fn get(d: &Vec<Column>, i: usize, j: usize) -> Data {
-    match &d[i] {
+pub fn get(d: &Vec<Column>, col_idx: usize, row_idx: usize) -> Data {
+    match &d[col_idx] {
         Column::Bool(b) => {
-            if let Some(val) = &b[j] {
+            if let Some(val) = &b[row_idx] {
                 Data::Bool(*val)
             } else {
                 Data::Null
             }
         }
         Column::Int(b) => {
-            if let Some(val) = &b[j] {
+            if let Some(val) = &b[row_idx] {
                 Data::Int(*val)
             } else {
                 Data::Null
             }
         }
         Column::Float(b) => {
-            if let Some(val) = &b[j] {
+            if let Some(val) = &b[row_idx] {
                 Data::Float(*val)
             } else {
                 Data::Null
             }
         }
         Column::String(b) => {
-            if let Some(val) = &b[j] {
+            if let Some(val) = &b[row_idx] {
                 Data::String(val.clone())
             } else {
                 Data::Null
