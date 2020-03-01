@@ -3,13 +3,10 @@
 
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
-use num_cpus;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::thread;
-
-const NUM_CPUS: usize = num_cpus::get();
 
 /// Represents a column of parsed data from a `SoR` file.
 // TODO: change float to double and add real float?
@@ -74,6 +71,9 @@ fn init_columnar(schema: &Vec<DataType>) -> Vec<Column> {
     result
 }
 
+// TODO: this has a bug if num_threads is == 1. See tests/lib.rs
+// `is_missing_idx` and `print_col_idx`
+
 /// Reads `len` number of bytes from a given file starting at the `from` byte
 /// offset an according to the given `schema`.
 ///
@@ -85,6 +85,7 @@ pub fn from_file(
     schema: Vec<DataType>,
     from: usize,
     len: usize,
+    num_threads: usize,
 ) -> Vec<Column> {
     // the total number of bytes to read
     let num_chars = if len == std::usize::MAX {
@@ -94,13 +95,13 @@ pub fn from_file(
         len as f64
     };
     // each thread will parse this many characters +- some number
-    let step = (num_chars / NUM_CPUS as f64).ceil() as usize;
+    let step = (num_chars / num_threads as f64).ceil() as usize;
 
     // setup the work array with the from / len for each thread
     // each element in the work array is a tuple of (starting index, number of byte for this thread)
     let f: File = File::open(file_path.clone()).unwrap();
     let mut reader = BufReader::new(f);
-    let mut work: Vec<(usize, usize)> = Vec::with_capacity(NUM_CPUS + 1);
+    let mut work: Vec<(usize, usize)> = Vec::with_capacity(num_threads + 1);
 
     // add the first one separately since we want to access the previous thread's
     // work when in the loop. Since the work of the first thread will call
@@ -115,7 +116,7 @@ pub fn from_file(
     // by adding the length of the last line that a previous thread would've
     // thrown away. The work gets added to the following thread so that
     // each thread starts at a full line and reads only until the end of a line
-    for i in 1..NUM_CPUS {
+    for i in 1..num_threads {
         so_far += step;
         // advance the reader to this threads starting index then
         // find the next newline character

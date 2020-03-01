@@ -1,3 +1,4 @@
+use num_cpus;
 use sorer::dataframe::*;
 use sorer::schema::infer_schema_from_file;
 
@@ -12,23 +13,25 @@ fn main() {
     let parsed_args = ProgArgs::from(args);
 
     let schema = infer_schema_from_file(parsed_args.file.clone());
+    let num_threads = num_cpus::get();
 
     let dataframe = from_file(
         parsed_args.file,
         schema.clone(),
         parsed_args.from,
         parsed_args.len,
+        num_threads,
     );
 
     // metadata about the parsed file
-    let num_cols = dataframe.len() as u64;
+    let num_cols = dataframe.len();
     let num_lines = if num_cols != 0 {
         (match &dataframe[0] {
             Column::Bool(b) => b.len(),
             Column::Int(b) => b.len(),
             Column::Float(b) => b.len(),
             Column::String(b) => b.len(),
-        }) as u64
+        })
     } else {
         0
     };
@@ -76,10 +79,7 @@ fn main() {
                     num_cols
                 );
             } else {
-                println!(
-                    "{}",
-                    format!("{:?}", schema[n as usize]).to_uppercase()
-                );
+                println!("{}", format!("{:?}", schema[n]).to_uppercase());
             }
         }
     }
