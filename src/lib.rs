@@ -165,8 +165,6 @@
 //! E.g. The schema: `<int> <bool> <string>` and a row: `<12>`
 //! parses to `<12><><>`
 
-extern crate nom;
-
 pub mod dataframe;
 pub mod parsers;
 pub mod schema;

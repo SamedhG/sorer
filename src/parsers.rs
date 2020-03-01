@@ -52,7 +52,7 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
         Some(b"-") => -1,
         _ => unreachable!(),
     };
-    // not unsafe because the spec guarantees only c++ characters in any field
+    // not unsafe because the spec guarantees only ascii characters in any field
     let num = unsafe { from_utf8_unchecked(number) }.parse::<i64>();
     match num {
         Ok(n) => Ok((remaining_input, Data::Int(n * multiplier))),
@@ -67,7 +67,7 @@ fn parse_delimited_int(i: &[u8]) -> IResult<&[u8], Data> {
 
 #[inline(always)]
 fn parse_string(i: &[u8]) -> IResult<&[u8], Data> {
-    // not unsafe because the spec guarantees only c++ characters in any field
+    // not unsafe because the spec guarantees only ascii characters in any field
     map(
         alt((delimited(tag("\""), is_not("\""), tag("\"")), is_not(" >"))),
         |s: &[u8]| {

@@ -10,12 +10,12 @@ fn main() {
     // parse the arguments
     let args: Vec<String> = env::args().collect();
     let parsed_args = ProgArgs::from(args);
-    
+
     let schema = infer_schema_from_file(parsed_args.file.clone());
 
     let dataframe = from_file(
         parsed_args.file,
-        schema.clone(), 
+        schema.clone(),
         parsed_args.from,
         parsed_args.len,
     );
@@ -78,8 +78,7 @@ fn main() {
             } else {
                 println!(
                     "{}",
-                    format!("{:?}",schema[n as usize])
-                        .to_uppercase()
+                    format!("{:?}", schema[n as usize]).to_uppercase()
                 );
             }
         }
