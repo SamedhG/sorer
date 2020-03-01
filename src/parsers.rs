@@ -1,6 +1,5 @@
 //! A module for parsing raw byte slices into `SoR` data.
 
-extern crate nom;
 use nom::error::ErrorKind;
 
 use std::str::from_utf8_unchecked;

@@ -87,8 +87,9 @@ pub fn from_file(
     len: usize,
 ) -> Vec<Column> {
     // the total number of bytes to read
-    let num_chars = if len == std::u64::MAX {
-        (std::fs::metadata(file_path.clone()).unwrap().len() - from) as f64
+    let num_chars = if len == std::usize::MAX {
+        (std::fs::metadata(file_path.clone()).unwrap().len() - from as u64)
+            as f64
     } else {
         len as f64
     };
@@ -118,7 +119,7 @@ pub fn from_file(
         so_far += step;
         // advance the reader to this threads starting index then
         // find the next newline character
-        reader.seek(SeekFrom::Start(so_far)).unwrap();
+        reader.seek(SeekFrom::Start(so_far as u64)).unwrap();
         reader.read_until(b'\n', &mut buffer).unwrap();
         work.push((so_far, step));
 
@@ -210,7 +211,7 @@ fn read_chunk<T>(
 where
     T: BufRead + Seek,
 {
-    reader.seek(SeekFrom::Start(from)).unwrap();
+    reader.seek(SeekFrom::Start(from as u64)).unwrap();
     let mut buffer = Vec::new();
 
     let mut so_far = if from != 0 {
