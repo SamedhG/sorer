@@ -1,4 +1,6 @@
+use num_cpus;
 use sorer::dataframe::*;
+use sorer::schema::infer_schema_from_file;
 
 use std::env;
 
@@ -10,21 +12,26 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let parsed_args = ProgArgs::from(args);
 
-    let dataframe = DataFrame::from_file(
+    let schema = infer_schema_from_file(parsed_args.file.clone());
+    let num_threads = num_cpus::get();
+
+    let dataframe = from_file(
         parsed_args.file,
+        schema.clone(),
         parsed_args.from,
         parsed_args.len,
+        num_threads,
     );
 
     // metadata about the parsed file
-    let num_cols = dataframe.data.len() as u64;
+    let num_cols = dataframe.len();
     let num_lines = if num_cols != 0 {
-        (match &dataframe.data[0] {
+        (match &dataframe[0] {
             Column::Bool(b) => b.len(),
             Column::Int(b) => b.len(),
             Column::Float(b) => b.len(),
             Column::String(b) => b.len(),
-        }) as u64
+        })
     } else {
         0
     };
@@ -40,7 +47,7 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                println!("{}", dataframe.get(n1, n2));
+                println!("{}", get(&dataframe, n1, n2));
             }
         }
         Options::IsMissingIdx(n1, n2) => {
@@ -52,7 +59,7 @@ fn main() {
             } else if n2 >= num_lines {
                 println!("Error: Only {} lines were parsed", num_lines);
             } else {
-                if dataframe.get(n1, n2) == Data::Null {
+                if get(&dataframe, n1, n2) == Data::Null {
                     println!("{}", 1);
                 } else {
                     println!("{}", 0);
@@ -72,11 +79,7 @@ fn main() {
                     num_cols
                 );
             } else {
-                println!(
-                    "{}",
-                    format!("{:?}", &dataframe.schema[n as usize])
-                        .to_uppercase()
-                );
+                println!("{}", format!("{:?}", schema[n]).to_uppercase());
             }
         }
     }

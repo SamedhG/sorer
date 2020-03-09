@@ -1,24 +1,24 @@
 //! A module for inferring `SoR` schemas.
-use std::io::prelude::*;
-
 use crate::dataframe::Data;
 use crate::parsers::parse_line;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 /// A plain enumeration of the possible data types used in `SoR`, this one
 /// without its accompanying value.
 #[derive(PartialEq, Debug, Clone)]
 pub enum DataType {
-    /// Has the highest data type precedence
+    /// Has the highest data type precedence.
     String,
-    /// Has the second highest data type precedence
+    /// Has the second highest data type precedence.
     Float,
-    /// Has the third highest data type precedence
+    /// Has the third highest data type precedence.
     Int,
-    /// Has the fourth highest data type precedence
+    /// Has the fourth highest data type precedence.
     Bool,
 }
 
-// Get the dominant dat type b.w to comparable types
+// Get the dominant data type between two `DataType`s
 fn get_dominant_data_type(
     cur_dominant_type: &DataType,
     other_type: &Data,
@@ -34,10 +34,19 @@ fn get_dominant_data_type(
     }
 }
 
-/// Infers the schema of the file with the path from `options.file`.
+/// Infers the schema of the file with the given `file_name`.
 /// Full information on how schema inference works can be found
 /// [here](../index.html#schema-inference)
-pub fn infer_schema<T>(reader: T) -> Vec<DataType>
+pub fn infer_schema_from_file(file_name: String) -> Vec<DataType> {
+    let f: File = File::open(file_name).unwrap();
+    let reader = BufReader::new(f);
+    infer_schema(reader)
+}
+
+/// Infers the schema of the file opened by the given `reader`.
+/// Full information on how schema inference works can be found
+/// [here](../index.html#schema-inference)
+pub(crate) fn infer_schema<T>(reader: T) -> Vec<DataType>
 where
     T: BufRead,
 {

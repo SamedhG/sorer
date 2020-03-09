@@ -1,18 +1,18 @@
 // Struct containing the data from the command line arguments
 #[derive(Debug, Clone)]
 pub(crate) struct ProgArgs {
-    pub file: String,
-    pub from: u64,
-    pub len: u64,
-    pub option: Options,
+    pub(crate) file: String,
+    pub(crate) from: usize,
+    pub(crate) len: usize,
+    pub(crate) option: Options,
 }
 
 // Enum to depict all the operations to be done on the binary file
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Options {
-    PrintColType(u64),
-    PrintColIdx(u64, u64),
-    IsMissingIdx(u64, u64),
+    PrintColType(usize),
+    PrintColIdx(usize, usize),
+    IsMissingIdx(usize, usize),
 }
 
 // Parses command line arguments for this binary
@@ -33,14 +33,14 @@ impl From<Vec<String>> for ProgArgs {
             if args[i] == "-from" {
                 i += 1;
                 match from {
-                    None => from = Some(args[i].parse::<u64>().unwrap()),
+                    None => from = Some(args[i].parse::<usize>().unwrap()),
                     Some(a) => panic!(format!("From was already set to {}", a)),
                 }
             }
             if args[i] == "-len" {
                 i += 1;
                 match len {
-                    None => len = Some(args[i].parse::<u64>().unwrap()),
+                    None => len = Some(args[i].parse::<usize>().unwrap()),
                     Some(a) => panic!(format!("Len was already set to {}", a)),
                 }
             }
@@ -48,7 +48,7 @@ impl From<Vec<String>> for ProgArgs {
                 match opt {
                     None => {
                         i += 1;
-                        let n = args[i].parse::<u64>().unwrap();
+                        let n = args[i].parse::<usize>().unwrap();
                         opt = Some(Options::PrintColType(n));
                     }
                     Some(a) => {
@@ -60,9 +60,9 @@ impl From<Vec<String>> for ProgArgs {
                 match opt {
                     None => {
                         i += 1;
-                        let n1 = args[i].parse::<u64>().unwrap();
+                        let n1 = args[i].parse::<usize>().unwrap();
                         i += 1;
-                        let n2 = args[i].parse::<u64>().unwrap();
+                        let n2 = args[i].parse::<usize>().unwrap();
                         opt = Some(Options::PrintColIdx(n1, n2));
                     }
                     Some(a) => {
@@ -74,9 +74,9 @@ impl From<Vec<String>> for ProgArgs {
                 match opt {
                     None => {
                         i += 1;
-                        let n1 = args[i].parse::<u64>().unwrap();
+                        let n1 = args[i].parse::<usize>().unwrap();
                         i += 1;
-                        let n2 = args[i].parse::<u64>().unwrap();
+                        let n2 = args[i].parse::<usize>().unwrap();
                         opt = Some(Options::IsMissingIdx(n1, n2));
                     }
                     Some(a) => {
@@ -101,13 +101,13 @@ impl From<Vec<String>> for ProgArgs {
             (Some(file), None, None, Some(option)) => ProgArgs {
                 file: file.to_owned(),
                 from: 0,
-                len: std::u64::MAX,
+                len: std::usize::MAX,
                 option: option.to_owned(),
             },
             (Some(file), Some(from), None, Some(option)) => ProgArgs {
                 file: file.to_owned(),
                 from: *from,
-                len: std::u64::MAX,
+                len: std::usize::MAX,
                 option: option.to_owned(),
             },
             _ => panic!("Missing required arguments"),

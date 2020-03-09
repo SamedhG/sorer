@@ -1,10 +1,6 @@
 use sorer::dataframe::*;
 use sorer::schema::*;
 
-use std::fs::File;
-use std::io::BufReader;
-use std::path::Path;
-
 #[test]
 fn get_col_type() {
     let col_type_tests = vec![
@@ -18,10 +14,7 @@ fn get_col_type() {
     ];
 
     for t in col_type_tests {
-        let f = File::open(Path::new(t.0)).unwrap();
-        let reader = BufReader::new(f);
-        let s = infer_schema(reader);
-
+        let s = infer_schema_from_file(String::from(t.0));
         assert_eq!(*s.get(t.1).unwrap(), t.2);
     }
 }
@@ -36,17 +29,18 @@ fn is_missing_idx() {
     ];
 
     for t in is_missing_tests {
-        let data_frame: DataFrame = DataFrame::from_file(t.0, 0, std::u64::MAX);
+        let schema = infer_schema_from_file(t.0.clone());
+        let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
-        assert_eq!(data_frame.get(t.1, t.2) == Data::Null, t.3);
+        assert_eq!(get(&data_frame, t.1, t.2) == Data::Null, t.3);
     }
 
     // special case
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -is_missing_idx 0 0
-    let data_frame: DataFrame =
-        DataFrame::from_file(String::from("tests/1.sor"), 1, 74);
+    let schema = infer_schema_from_file(String::from("tests/1.sor"));
+    let data_frame = from_file(String::from("tests/1.sor"), schema, 1, 74, 8);
 
-    assert_eq!(data_frame.get(0, 0) == Data::Null, false);
+    assert_eq!(get(&data_frame, 0, 0) == Data::Null, false);
 }
 
 // NOTE: This test is ignored by default since running `cargo test` uses the debug build, which is
@@ -85,9 +79,10 @@ fn print_col_idx() {
     ];
 
     for t in print_col_idx_tests {
-        let data_frame: DataFrame = DataFrame::from_file(t.0, 0, std::u64::MAX);
+        let schema = infer_schema_from_file(t.0.clone());
+        let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
-        assert_eq!(data_frame.get(t.1, t.2), t.3);
+        assert_eq!(get(&data_frame, t.1, t.2), t.3);
     }
     // special case:
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -print_col_idx 0 6
