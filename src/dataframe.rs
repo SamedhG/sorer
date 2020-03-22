@@ -3,6 +3,7 @@
 
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
@@ -10,7 +11,7 @@ use std::thread;
 
 /// Represents a column of parsed data from a `SoR` file.
 // TODO: change float to double and add real float?
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub enum Column {
     /// A Column consisting of optional `i64`s.
     Int(Vec<Option<i64>>),
@@ -24,7 +25,7 @@ pub enum Column {
 
 /// An enumeration of the possible `SoR` data types, that also contains the
 /// data itself.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub enum Data {
     /// A `String` cell.
     String(String),

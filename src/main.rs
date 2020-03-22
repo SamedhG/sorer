@@ -26,12 +26,12 @@ fn main() {
     // metadata about the parsed file
     let num_cols = dataframe.len();
     let num_lines = if num_cols != 0 {
-        (match &dataframe[0] {
+        match &dataframe[0] {
             Column::Bool(b) => b.len(),
             Column::Int(b) => b.len(),
             Column::Float(b) => b.len(),
             Column::String(b) => b.len(),
-        })
+        }
     } else {
         0
     };
