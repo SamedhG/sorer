@@ -191,7 +191,7 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 /// executable.
 pub fn parse_line_with_schema(
     i: &[u8],
-    schema: &Vec<DataType>,
+    schema: &[DataType],
 ) -> Option<Vec<Data>> {
     if i.is_empty() {
         return None;

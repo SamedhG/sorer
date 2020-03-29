@@ -12,7 +12,7 @@ use std::io::prelude::*;
 fn main() {
     let mut f = File::create("foo.txt").unwrap();
     let mut rng = thread_rng();
-    for _ in 0..10000000 {
+    for _ in 0..10_000_000 {
         let s1: String = rng.sample_iter(&Alphanumeric).take(12).collect();
         let s2: String = rng.sample_iter(&Alphanumeric).take(12).collect();
         let to_insert = format!(

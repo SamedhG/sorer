@@ -2,6 +2,7 @@
 use crate::dataframe::Data;
 use crate::parsers::parse_line;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 /// A plain enumeration of the possible data types used in `SoR`, this one
@@ -61,12 +62,14 @@ where
             continue;
         };
         let parsed = parsed.unwrap();
-        if parsed.len() > curr_length {
-            parsed_lines.clear();
-            curr_length = parsed.len();
-            parsed_lines.push(parsed);
-        } else if parsed.len() == curr_length {
-            parsed_lines.push(parsed);
+        match parsed.len().cmp(&curr_length) {
+            Ordering::Greater => {
+                parsed_lines.clear();
+                curr_length = parsed.len();
+                parsed_lines.push(parsed);
+            }
+            Ordering::Equal => parsed_lines.push(parsed),
+            Ordering::Less => (),
         }
     }
 

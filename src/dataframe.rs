@@ -10,7 +10,6 @@ use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::thread;
 
 /// Represents a column of parsed data from a `SoR` file.
-// TODO: change float to double and add real float?
 #[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub enum Column {
     /// A Column consisting of optional `i64`s.
@@ -59,7 +58,7 @@ impl fmt::Display for Data {
 }
 
 /// Generate a `Vec<Column>` matching the given schema.
-fn init_columnar(schema: &Vec<DataType>) -> Vec<Column> {
+fn init_columnar(schema: &[DataType]) -> Vec<Column> {
     let mut result = Vec::with_capacity(schema.len() + 1);
     for t in schema {
         match t {
@@ -167,7 +166,7 @@ pub fn from_file(
 }
 
 /// Get the (i,j) element from the DataFrame
-pub fn get(d: &Vec<Column>, col_idx: usize, row_idx: usize) -> Data {
+pub fn get(d: &[Column], col_idx: usize, row_idx: usize) -> Data {
     match &d[col_idx] {
         Column::Bool(b) => {
             if let Some(val) = &b[row_idx] {
