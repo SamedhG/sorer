@@ -10,7 +10,8 @@ fn get_col_type() {
         ("tests/2.sor", 1, DataType::Int),
         ("tests/2.sor", 2, DataType::Float),
         ("tests/2.sor", 3, DataType::String),
-        ("tests/3.sor", 4, DataType::Bool),
+        // commented out due to handins limitations on max submission size
+        //        ("tests/3.sor", 4, DataType::Bool),
     ];
 
     for t in col_type_tests {
@@ -70,8 +71,9 @@ fn print_col_idx() {
         ),
         (String::from("tests/2.sor"), 2, 0, Data::Float(1.2)),
         (String::from("tests/2.sor"), 2, 1, Data::Float(-0.2)),
-        (String::from("tests/3.sor"), 2, 10, Data::Float(1.2)),
-        (String::from("tests/3.sor"), 2, 384200, Data::Float(1.2)),
+        // commented out due to handins limitations on max submission size
+        //(String::from("tests/3.sor"), 2, 10, Data::Float(1.2)),
+        //(String::from("tests/3.sor"), 2, 384200, Data::Float(1.2)),
         (String::from("tests/4.sor"), 0, 1, Data::Int(2147483647)),
         (String::from("tests/4.sor"), 0, 2, Data::Int(-2147483648)),
         (String::from("tests/4.sor"), 1, 1, Data::Float(-2e-09)),
