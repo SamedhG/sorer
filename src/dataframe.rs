@@ -4,6 +4,7 @@
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
 use serde::{Deserialize, Serialize};
+use std::convert::From;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
@@ -20,6 +21,42 @@ pub enum Column {
     Float(Vec<Option<f64>>),
     /// A Column consisting of optional `String`s.
     String(Vec<Option<String>>),
+}
+
+// NOTE: should replace with a custom derive macro
+impl From<Vec<Option<i64>>> for Column {
+    fn from(vec: Vec<Option<i64>>) -> Self {
+        Column::Int(vec)
+    }
+}
+
+impl From<Vec<Option<bool>>> for Column {
+    fn from(vec: Vec<Option<bool>>) -> Self {
+        Column::Bool(vec)
+    }
+}
+
+impl From<Vec<Option<f64>>> for Column {
+    fn from(vec: Vec<Option<f64>>) -> Self {
+        Column::Float(vec)
+    }
+}
+
+impl From<Vec<Option<String>>> for Column {
+    fn from(vec: Vec<Option<String>>) -> Self {
+        Column::String(vec)
+    }
+}
+
+impl Column {
+    pub fn len(&self) -> usize {
+        match &self {
+            &Column::Bool(col) => col.len(),
+            &Column::Int(col) => col.len(),
+            &Column::Float(col) => col.len(),
+            &Column::String(col) => col.len(),
+        }
+    }
 }
 
 /// An enumeration of the possible `SoR` data types, that also contains the
