@@ -24,7 +24,24 @@ lto = true
 [dev-dependencies]
 criterion = "0.3.1"
 
+[lib]
+bench = false
+
+[[bin]]
+name = "sorer"
+path = "src/main.rs"
+bench = false
+
+[[bin]]
+name = "generate"
+path = "src/bin/generate.rs"
+bench = false
+
 [[bench]]
 name = "schema_inference"
+harness = false
+
+[[bench]]
+name = "parser"
 harness = false
 
