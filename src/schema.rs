@@ -39,16 +39,16 @@ fn get_dominant_data_type(
 /// Infers the schema of the file with the given `file_name`.
 /// Full information on how schema inference works can be found
 /// [here](../index.html#schema-inference)
-pub fn infer_schema_from_file(file_name: String) -> Vec<DataType> {
+pub fn infer_schema(file_name: String) -> Vec<DataType> {
     let f: File = File::open(file_name).unwrap();
     let reader = BufReader::new(f);
-    infer_schema(reader)
+    infer_schema_from_reader(reader)
 }
 
 /// Infers the schema of the file opened by the given `reader`.
 /// Full information on how schema inference works can be found
 /// [here](../index.html#schema-inference)
-pub(crate) fn infer_schema<T>(reader: T) -> Vec<DataType>
+pub(crate) fn infer_schema_from_reader<T>(reader: T) -> Vec<DataType>
 where
     T: BufRead,
 {
@@ -90,7 +90,6 @@ where
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use std::io::Cursor;
 
@@ -99,7 +98,7 @@ mod tests {
         // Design decisions demonstrated by this test:
         // Null only columns are typed as a Bool
         let input = Cursor::new(b"<1><hello><>\n<12><1.2><>");
-        let schema = infer_schema(input);
+        let schema = infer_schema_from_reader(input);
         assert_eq!(
             schema,
             vec![DataType::Int, DataType::String, DataType::Bool]
@@ -107,14 +106,14 @@ mod tests {
 
         let uses_row_w_most_fields =
             Cursor::new(b"<1>\n<hello><0>\n<1.1><0><2>");
-        let schema2 = infer_schema(uses_row_w_most_fields);
+        let schema2 = infer_schema_from_reader(uses_row_w_most_fields);
         assert_eq!(
             schema2,
             vec![DataType::Float, DataType::Bool, DataType::Int]
         );
 
         let type_precedence = Cursor::new(b"<0><3><3.3><str>\n<3><5.5><r><h>");
-        let schema3 = infer_schema(type_precedence);
+        let schema3 = infer_schema_from_reader(type_precedence);
         assert_eq!(
             schema3,
             vec![

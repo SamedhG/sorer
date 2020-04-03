@@ -15,7 +15,7 @@ fn get_col_type() {
     ];
 
     for t in col_type_tests {
-        let s = infer_schema_from_file(String::from(t.0));
+        let s = infer_schema(String::from(t.0));
         assert_eq!(*s.get(t.1).unwrap(), t.2);
     }
 }
@@ -30,7 +30,7 @@ fn is_missing_idx() {
     ];
 
     for t in is_missing_tests {
-        let schema = infer_schema_from_file(t.0.clone());
+        let schema = infer_schema(t.0.clone());
         let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
         assert_eq!(get(&data_frame, t.1, t.2) == Data::Null, t.3);
@@ -38,7 +38,7 @@ fn is_missing_idx() {
 
     // special case
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -is_missing_idx 0 0
-    let schema = infer_schema_from_file(String::from("tests/1.sor"));
+    let schema = infer_schema(String::from("tests/1.sor"));
     let data_frame = from_file(String::from("tests/1.sor"), schema, 1, 74, 8);
 
     assert_eq!(get(&data_frame, 0, 0) == Data::Null, false);
@@ -81,7 +81,7 @@ fn print_col_idx() {
     ];
 
     for t in print_col_idx_tests {
-        let schema = infer_schema_from_file(t.0.clone());
+        let schema = infer_schema(t.0.clone());
         let data_frame = from_file(t.0, schema, 0, std::usize::MAX, 8);
 
         assert_eq!(get(&data_frame, t.1, t.2), t.3);

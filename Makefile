@@ -4,7 +4,7 @@ build:
 	cp target/release/sorer .
 
 run:
-	docker run -it -v `pwd`:/sorer sorer ./sorer -f sor.txt -print_col_type 0   
+	docker run -it -v `pwd`:/sorer sorer ./sorer -f tests/sor.txt -print_col_type 0   
 
 test:
 	docker run -it -v `pwd`:/sorer sorer cargo test

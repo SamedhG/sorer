@@ -1,6 +1,6 @@
 use num_cpus;
 use sorer::dataframe::*;
-use sorer::schema::infer_schema_from_file;
+use sorer::schema::infer_schema;
 
 use std::env;
 
@@ -12,7 +12,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let parsed_args = ProgArgs::from(args);
 
-    let schema = infer_schema_from_file(parsed_args.file.clone());
+    let schema = infer_schema(parsed_args.file.clone());
     let num_threads = num_cpus::get();
 
     let dataframe = from_file(
