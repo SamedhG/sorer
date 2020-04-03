@@ -39,7 +39,7 @@ fn get_dominant_data_type(
 /// Infers the schema of the file with the given `file_name`.
 /// Full information on how schema inference works can be found
 /// [here](../index.html#schema-inference)
-pub fn infer_schema(file_name: String) -> Vec<DataType> {
+pub fn infer_schema(file_name: &str) -> Vec<DataType> {
     let f: File = File::open(file_name).unwrap();
     let reader = BufReader::new(f);
     infer_schema_from_reader(reader)

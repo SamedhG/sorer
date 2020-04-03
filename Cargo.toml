@@ -20,3 +20,11 @@ deepsize = "0.1.2"
 codegen-units = 1
 panic = 'abort'
 lto = true
+
+[dev-dependencies]
+criterion = "0.3.1"
+
+[[bench]]
+name = "schema_inference"
+harness = false
+

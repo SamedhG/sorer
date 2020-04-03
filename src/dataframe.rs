@@ -93,7 +93,7 @@ fn init_columnar(schema: &[DataType]) -> Vec<Column> {
 ///  using unless you are trying to extend `SoRer`. There are many intricate
 /// facets to using `SoRer` so you *must* RTFM [here](../index.html)
 pub fn from_file(
-    file_path: String,
+    file_path: &str,
     schema: Vec<DataType>,
     from: usize,
     len: usize,
@@ -101,8 +101,7 @@ pub fn from_file(
 ) -> Vec<Column> {
     // the total number of bytes to read
     let num_chars = if len == std::usize::MAX {
-        (std::fs::metadata(file_path.clone()).unwrap().len() - from as u64)
-            as f64
+        (std::fs::metadata(file_path).unwrap().len() - from as u64) as f64
     } else {
         len as f64
     };
@@ -111,7 +110,7 @@ pub fn from_file(
 
     // setup the work array with the from / len for each thread
     // each element in the work array is a tuple of (starting index, number of byte for this thread)
-    let f: File = File::open(file_path.clone()).unwrap();
+    let f: File = File::open(file_path).unwrap();
     let mut reader = BufReader::new(f);
     let mut work: Vec<(usize, usize)> = Vec::with_capacity(num_threads + 1);
 

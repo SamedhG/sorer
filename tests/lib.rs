@@ -15,7 +15,7 @@ fn get_col_type() {
     ];
 
     for t in col_type_tests {
-        let s = infer_schema(String::from(t.0));
+        let s = infer_schema(t.0);
         assert_eq!(*s.get(t.1).unwrap(), t.2);
     }
 }
@@ -23,10 +23,10 @@ fn get_col_type() {
 #[test]
 fn is_missing_idx() {
     let is_missing_tests = vec![
-        (String::from("tests/0.sor"), 0, 0, true),
-        (String::from("tests/1.sor"), 0, 1, false),
-        (String::from("tests/2.sor"), 1, 0, true),
-        (String::from("tests/2.sor"), 1, 1, false),
+        ("tests/0.sor", 0, 0, true),
+        ("tests/1.sor", 0, 1, false),
+        ("tests/2.sor", 1, 0, true),
+        ("tests/2.sor", 1, 1, false),
     ];
 
     for t in is_missing_tests {
@@ -38,8 +38,8 @@ fn is_missing_idx() {
 
     // special case
     // ./sorer./sorer -f 1.sor -from 1 -len 74 -is_missing_idx 0 0
-    let schema = infer_schema(String::from("tests/1.sor"));
-    let data_frame = from_file(String::from("tests/1.sor"), schema, 1, 74, 8);
+    let schema = infer_schema("tests/1.sor");
+    let data_frame = from_file("tests/1.sor", schema, 1, 74, 8);
 
     assert_eq!(get(&data_frame, 0, 0) == Data::Null, false);
 }
@@ -51,33 +51,18 @@ fn is_missing_idx() {
 #[ignore]
 fn print_col_idx() {
     let print_col_idx_tests = vec![
-        (
-            String::from("tests/1.sor"),
-            0,
-            3,
-            Data::String("+1".to_string()),
-        ),
-        (
-            String::from("tests/2.sor"),
-            3,
-            0,
-            Data::String("hi".to_string()),
-        ),
-        (
-            String::from("tests/2.sor"),
-            3,
-            1,
-            Data::String("ho ho ho".to_string()),
-        ),
-        (String::from("tests/2.sor"), 2, 0, Data::Float(1.2)),
-        (String::from("tests/2.sor"), 2, 1, Data::Float(-0.2)),
+        ("tests/1.sor", 0, 3, Data::String("+1".to_string())),
+        ("tests/2.sor", 3, 0, Data::String("hi".to_string())),
+        ("tests/2.sor", 3, 1, Data::String("ho ho ho".to_string())),
+        ("tests/2.sor", 2, 0, Data::Float(1.2)),
+        ("tests/2.sor", 2, 1, Data::Float(-0.2)),
         // commented out due to handins limitations on max submission size
-        //(String::from("tests/3.sor"), 2, 10, Data::Float(1.2)),
-        //(String::from("tests/3.sor"), 2, 384200, Data::Float(1.2)),
-        (String::from("tests/4.sor"), 0, 1, Data::Int(2147483647)),
-        (String::from("tests/4.sor"), 0, 2, Data::Int(-2147483648)),
-        (String::from("tests/4.sor"), 1, 1, Data::Float(-2e-09)),
-        (String::from("tests/4.sor"), 1, 2, Data::Float(1e+10)),
+        //("tests/3.sor", 2, 10, Data::Float(1.2)),
+        //("tests/3.sor", 2, 384200, Data::Float(1.2)),
+        ("tests/4.sor", 0, 1, Data::Int(2147483647)),
+        ("tests/4.sor", 0, 2, Data::Int(-2147483648)),
+        ("tests/4.sor", 1, 1, Data::Float(-2e-09)),
+        ("tests/4.sor", 1, 2, Data::Float(1e+10)),
     ];
 
     for t in print_col_idx_tests {

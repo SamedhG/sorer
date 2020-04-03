@@ -12,11 +12,11 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let parsed_args = ProgArgs::from(args);
 
-    let schema = infer_schema(parsed_args.file.clone());
+    let schema = infer_schema(&parsed_args.file.clone());
     let num_threads = num_cpus::get();
 
     let dataframe = from_file(
-        parsed_args.file,
+        &parsed_args.file,
         schema.clone(),
         parsed_args.from,
         parsed_args.len,
