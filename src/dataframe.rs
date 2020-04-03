@@ -5,6 +5,7 @@ use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
 use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
+use std::convert::{From, TryFrom};
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
@@ -48,25 +49,6 @@ pub enum Data {
     Bool(bool),
     /// A missing value.
     Null,
-}
-
-/// Print the `Data` of a `Data` cell.
-/// The number for `Int`s and `float`s.
-/// 0 for `false`.
-/// 1 for `true`.
-/// A double quote delimited `String`.
-/// and "Missing Value" for missing data.
-impl fmt::Display for Data {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Data::String(s) => write!(f, "\"{}\"", s),
-            Data::Int(n) => write!(f, "{}", n),
-            Data::Float(fl) => write!(f, "{}", fl),
-            Data::Bool(true) => write!(f, "1"),
-            Data::Bool(false) => write!(f, "0"),
-            Data::Null => write!(f, "Missing Value"),
-        }
-    }
 }
 
 /// Generate a `Vec<Column>` matching the given schema.
@@ -272,6 +254,93 @@ where
         buffer.clear();
     }
     parsed_data
+}
+
+impl From<Vec<Option<bool>>> for Column {
+    fn from(v: Vec<Option<bool>>) -> Column {
+        Column::Bool(v)
+    }
+}
+
+impl From<Vec<Option<i64>>> for Column {
+    fn from(v: Vec<Option<i64>>) -> Column {
+        Column::Int(v)
+    }
+}
+
+impl From<Vec<Option<f64>>> for Column {
+    fn from(v: Vec<Option<f64>>) -> Column {
+        Column::Float(v)
+    }
+}
+
+impl From<Vec<Option<String>>> for Column {
+    fn from(v: Vec<Option<String>>) -> Column {
+        Column::String(v)
+    }
+}
+
+impl TryFrom<Column> for Vec<Option<bool>> {
+    type Error = &'static str;
+
+    fn try_from(c: Column) -> Result<Self, Self::Error> {
+        match c {
+            Column::Bool(col) => Ok(col),
+            _ => Err("The given column was not of type bool"),
+        }
+    }
+}
+
+impl TryFrom<Column> for Vec<Option<i64>> {
+    type Error = &'static str;
+
+    fn try_from(c: Column) -> Result<Self, Self::Error> {
+        match c {
+            Column::Int(col) => Ok(col),
+            _ => Err("The given column was not of type int"),
+        }
+    }
+}
+
+impl TryFrom<Column> for Vec<Option<f64>> {
+    type Error = &'static str;
+
+    fn try_from(c: Column) -> Result<Self, Self::Error> {
+        match c {
+            Column::Float(col) => Ok(col),
+            _ => Err("The given column was not of type float"),
+        }
+    }
+}
+
+impl TryFrom<Column> for Vec<Option<String>> {
+    type Error = &'static str;
+
+    fn try_from(c: Column) -> Result<Self, Self::Error> {
+        match c {
+            Column::String(col) => Ok(col),
+            _ => Err("The given column was not of type String"),
+        }
+    }
+}
+
+/// Print the `Data` of a `Data` cell.
+/// The number for `Int`s and `float`s.
+/// 0 for `false`.
+/// 1 for `true`.
+/// A double quote delimited `String`.
+/// and "Missing Value" for missing data.
+impl fmt::Display for Data {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Data::String(s) => write!(f, "\"{}\"", s),
+            Data::Int(n) => write!(f, "{}", n),
+            Data::Float(fl) => write!(f, "{}", fl),
+            Data::Bool(true) => write!(f, "1"),
+            Data::Bool(false) => write!(f, "0"),
+            Data::Null => write!(f, "Missing Value"),
+        }
+    }
 }
 
 #[cfg(test)]
