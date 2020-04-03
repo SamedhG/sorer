@@ -1,13 +1,14 @@
 //! A module for inferring `SoR` schemas.
 use crate::dataframe::Data;
 use crate::parsers::parse_line;
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 /// A plain enumeration of the possible data types used in `SoR`, this one
 /// without its accompanying value.
-#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Serialize, Deserialize, DeepSizeOf)]
 pub enum DataType {
     /// Has the highest data type precedence.
     String,

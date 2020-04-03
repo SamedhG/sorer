@@ -3,15 +3,15 @@
 
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
-use std::convert::From;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::thread;
 
 /// Represents a column of parsed data from a `SoR` file.
-#[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, DeepSizeOf)]
 pub enum Column {
     /// A Column consisting of optional `i64`s.
     Int(Vec<Option<i64>>),
@@ -21,31 +21,6 @@ pub enum Column {
     Float(Vec<Option<f64>>),
     /// A Column consisting of optional `String`s.
     String(Vec<Option<String>>),
-}
-
-// NOTE: should replace with a custom derive macro
-impl From<Vec<Option<i64>>> for Column {
-    fn from(vec: Vec<Option<i64>>) -> Self {
-        Column::Int(vec)
-    }
-}
-
-impl From<Vec<Option<bool>>> for Column {
-    fn from(vec: Vec<Option<bool>>) -> Self {
-        Column::Bool(vec)
-    }
-}
-
-impl From<Vec<Option<f64>>> for Column {
-    fn from(vec: Vec<Option<f64>>) -> Self {
-        Column::Float(vec)
-    }
-}
-
-impl From<Vec<Option<String>>> for Column {
-    fn from(vec: Vec<Option<String>>) -> Self {
-        Column::String(vec)
-    }
 }
 
 impl Column {
