@@ -67,6 +67,8 @@ fn init_columnar(schema: &[DataType]) -> Vec<Column> {
 
 // TODO: this has a bug if num_threads is == 1. See tests/lib.rs
 // `is_missing_idx` and `print_col_idx`
+// TODO: use crossbeam for scoped thread spawning and change from_file to
+// take `schema: &[DataType]`
 
 /// Reads `len` number of bytes from a given file starting at the `from` byte
 /// offset an according to the given `schema`.
