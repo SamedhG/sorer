@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::{From, TryFrom};
 use std::fmt;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Seek, SeekFrom, Split};
 use std::thread;
 
 /// Represents a column of parsed data from a `SoR` file.
@@ -258,6 +258,87 @@ where
     parsed_data
 }
 
+/// Used for chunking `SoR` files.
+pub struct SorTerator {
+    buf_reader: Split<BufReader<File>>,
+    chunk_size: usize,
+    schema: Vec<DataType>,
+    empty_col: Column,
+}
+
+/// A chunking iterator that can chunk `SoR` files into `Vec<Column>`s where
+/// all columns have the same length (number of rows) based an argument in
+/// the constructor. The last element returned by `next` may have less than
+/// `chunk_size` number of rows and it is up to the caller to verify the
+/// length if needed.
+impl SorTerator {
+    /// Creates a new [`SorTerator`](::crate::dataframe::SorTerator)
+    pub fn new(
+        file_name: &str,
+        schema: Vec<DataType>,
+        chunk_size: usize,
+    ) -> Self {
+        SorTerator {
+            buf_reader: BufReader::new(File::open(file_name).unwrap())
+                .split(b'\n'),
+            empty_col: Column::Bool(Vec::new()),
+            chunk_size,
+            schema,
+        }
+    }
+}
+
+/// Implementation for an `Iterator` that chunks a `SoR` file
+impl Iterator for SorTerator {
+    type Item = Vec<Column>;
+
+    /// Advances this iterator until `self.chunk_size` rows have been parsed,
+    /// returning `Some(Vec<Column>)` of the parsed rows when done, or `None`
+    /// or the file has been completely parsed. The last element returned by
+    /// `next` may have less than `chunk_size` number of rows and it is up to
+    /// the caller to verify the length if needed.
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut parsed_data = init_columnar(&self.schema);
+        while let Some(Ok(line)) = self.buf_reader.next() {
+            match parse_line_with_schema(&line, &self.schema) {
+                None => continue,
+                Some(data) => {
+                    let iter = data.iter().zip(parsed_data.iter_mut());
+                    for (d, col) in iter {
+                        match (d, col) {
+                            (Data::Bool(b), Column::Bool(c)) => {
+                                c.push(Some(*b))
+                            }
+                            (Data::Int(i), Column::Int(c)) => c.push(Some(*i)),
+                            (Data::Float(f), Column::Float(c)) => {
+                                c.push(Some(*f))
+                            }
+                            (Data::String(s), Column::String(c)) => {
+                                c.push(Some(s.clone()))
+                            }
+                            (Data::Null, Column::Bool(c)) => c.push(None),
+                            (Data::Null, Column::Int(c)) => c.push(None),
+                            (Data::Null, Column::Float(c)) => c.push(None),
+                            (Data::Null, Column::String(c)) => c.push(None),
+                            _ => panic!("Parser Failed"),
+                        }
+                    }
+                }
+            }
+            if let Some(column) = parsed_data.get(0) {
+                if column.len() == self.chunk_size {
+                    return Some(parsed_data);
+                }
+            }
+        }
+        if parsed_data.get(0).unwrap_or(&self.empty_col).len() > 0 {
+            Some(parsed_data)
+        } else {
+            None
+        }
+    }
+}
+
 impl From<Vec<Option<bool>>> for Column {
     fn from(v: Vec<Option<bool>>) -> Column {
         Column::Bool(v)
@@ -390,5 +471,23 @@ mod tests {
         let parsed4: Vec<Column> =
             read_chunk(schema.clone(), &mut input_with_invalid, 0, 32);
         assert_eq!(parsed4, expected.clone());
+    }
+
+    #[test]
+    fn test_sor_terator() {
+        let schema = vec![
+            DataType::Bool,
+            DataType::Int,
+            DataType::Float,
+            DataType::String,
+        ];
+        let mut sor_terator =
+            SorTerator::new("tests/sor_terator.sor", schema, 10);
+        let mut chunk = sor_terator.next();
+        assert_eq!(chunk.unwrap().get(0).unwrap().len(), 10);
+        chunk = sor_terator.next();
+        assert_eq!(chunk.unwrap().get(0).unwrap().len(), 5);
+        chunk = sor_terator.next();
+        assert!(chunk.is_none());
     }
 }
