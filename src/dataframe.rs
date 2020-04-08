@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::{From, TryFrom};
 use std::fmt;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek, SeekFrom, Split};
+use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::thread;
 
 /// Represents a column of parsed data from a `SoR` file.
@@ -260,10 +260,13 @@ where
 
 /// Used for chunking `SoR` files.
 pub struct SorTerator {
-    buf_reader: Split<BufReader<File>>,
+    file_name: String,
     chunk_size: usize,
     schema: Vec<DataType>,
-    empty_col: Column,
+    remaining_data: Vec<Column>,
+    num_threads: usize,
+    file_offset: usize,
+    file_size: usize,
 }
 
 /// A chunking iterator that can chunk `SoR` files into `Vec<Column>`s where
@@ -278,16 +281,19 @@ impl SorTerator {
         schema: Vec<DataType>,
         chunk_size: usize,
     ) -> Self {
+        let remaining_data = init_columnar(&schema);
         SorTerator {
-            buf_reader: BufReader::new(File::open(file_name).unwrap())
-                .split(b'\n'),
-            empty_col: Column::Bool(Vec::new()),
+            file_name: file_name.to_string(),
             chunk_size,
             schema,
+            remaining_data,
+            num_threads: num_cpus::get(),
+            file_offset: 0,
+            file_size: std::fs::metadata(file_name).unwrap().len() as usize,
         }
     }
 }
-
+const BUFFER_SIZE: usize = 1_000_000_000;
 /// Implementation for an `Iterator` that chunks a `SoR` file
 impl Iterator for SorTerator {
     type Item = Vec<Column>;
@@ -298,44 +304,74 @@ impl Iterator for SorTerator {
     /// `next` may have less than `chunk_size` number of rows and it is up to
     /// the caller to verify the length if needed.
     fn next(&mut self) -> Option<Self::Item> {
-        let mut parsed_data = init_columnar(&self.schema);
-        while let Some(Ok(line)) = self.buf_reader.next() {
-            match parse_line_with_schema(&line, &self.schema) {
-                None => continue,
-                Some(data) => {
-                    let iter = data.iter().zip(parsed_data.iter_mut());
-                    for (d, col) in iter {
-                        match (d, col) {
-                            (Data::Bool(b), Column::Bool(c)) => {
-                                c.push(Some(*b))
-                            }
-                            (Data::Int(i), Column::Int(c)) => c.push(Some(*i)),
-                            (Data::Float(f), Column::Float(c)) => {
-                                c.push(Some(*f))
-                            }
-                            (Data::String(s), Column::String(c)) => {
-                                c.push(Some(s.clone()))
-                            }
-                            (Data::Null, Column::Bool(c)) => c.push(None),
-                            (Data::Null, Column::Int(c)) => c.push(None),
-                            (Data::Null, Column::Float(c)) => c.push(None),
-                            (Data::Null, Column::String(c)) => c.push(None),
-                            _ => panic!("Parser Failed"),
-                        }
+        if n_rows(&self.remaining_data) == 0
+            && self.file_size <= self.file_offset
+        {
+            return None;
+        }
+        if n_rows(&self.remaining_data) < self.chunk_size {
+            let adjusted_buffer_size =
+                if self.file_size > self.file_offset + BUFFER_SIZE {
+                    let f: File = File::open(&self.file_name).unwrap();
+                    let mut reader = BufReader::new(f);
+
+                    reader
+                        .seek(SeekFrom::Start(
+                            (self.file_offset + BUFFER_SIZE) as u64,
+                        ))
+                        .unwrap();
+                    let mut buffer = Vec::new();
+                    reader.read_until(b'\n', &mut buffer).unwrap();
+                    BUFFER_SIZE + buffer.len() + 1
+                } else {
+                    BUFFER_SIZE
+                };
+
+            let new_data = from_file(
+                &self.file_name,
+                self.schema.clone(),
+                self.file_offset,
+                adjusted_buffer_size,
+                self.num_threads,
+            );
+            self.file_offset += adjusted_buffer_size - 1;
+            for (c1, c2) in self.remaining_data.iter_mut().zip(new_data.iter())
+            {
+                match (c1, c2) {
+                    (Column::Int(x), Column::Int(y)) => x.extend(y),
+                    (Column::Bool(x), Column::Bool(y)) => x.extend(y),
+                    (Column::Float(x), Column::Float(y)) => x.extend(y),
+                    (Column::String(x), Column::String(y)) => {
+                        y.into_iter().for_each(|s| x.push(s.clone()))
                     }
-                }
-            }
-            if let Some(column) = parsed_data.get(0) {
-                if column.len() == self.chunk_size {
-                    return Some(parsed_data);
+                    _ => unreachable!(),
                 }
             }
         }
-        if parsed_data.get(0).unwrap_or(&self.empty_col).len() > 0 {
-            Some(parsed_data)
-        } else {
-            None
+        if self.chunk_size > n_rows(&self.remaining_data) {
+            let mut empty = Vec::new();
+            std::mem::swap(&mut self.remaining_data, &mut empty);
+            return Some(empty);
         }
+        let mut new_data = Vec::new();
+        for c in &mut self.remaining_data {
+            let new_c = match c {
+                Column::Int(i) => {
+                    Column::Int(i.drain(0..self.chunk_size).collect())
+                }
+                Column::Bool(i) => {
+                    Column::Bool(i.drain(0..self.chunk_size).collect())
+                }
+                Column::Float(i) => {
+                    Column::Float(i.drain(0..self.chunk_size).collect())
+                }
+                Column::String(i) => {
+                    Column::String(i.drain(0..self.chunk_size).collect())
+                }
+            };
+            new_data.push(new_c);
+        }
+        Some(new_data)
     }
 }
 
@@ -423,6 +459,13 @@ impl fmt::Display for Data {
             Data::Bool(false) => write!(f, "0"),
             Data::Null => write!(f, "Missing Value"),
         }
+    }
+}
+
+fn n_rows(data: &Vec<Column>) -> usize {
+    match data.get(0) {
+        None => 0,
+        Some(x) => x.len(),
     }
 }
 
