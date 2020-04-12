@@ -51,6 +51,40 @@ pub enum Data {
     Null,
 }
 
+impl Data {
+    /// Get the data assuming its a String
+    pub fn unwrap_string(&self) -> String {
+        match self {
+            Data::String(s) => s.clone(),
+            _ => panic!("unwrap error"),
+        }
+    }
+
+    /// Get the data assuming its an int
+    pub fn unwrap_int(&self) -> i64 {
+        match self {
+            Data::Int(n) => *n,
+            _ => panic!("unwrap error"),
+        }
+    }
+
+    /// Get the data assuming its a float
+    pub fn unwrap_float(&self) -> f64 {
+        match self {
+            Data::Float(n) => *n,
+            _ => panic!("unwrap error"),
+        }
+    }
+
+    /// Get the data assuming its a bool
+    pub fn unwrap_bool(&self) -> bool {
+        match self {
+            Data::Bool(n) => *n,
+            _ => panic!("unwrap error"),
+        }
+    }
+}
+
 /// Generate a `Vec<Column>` matching the given schema.
 fn init_columnar(schema: &[DataType]) -> Vec<Column> {
     let mut result = Vec::with_capacity(schema.len() + 1);
