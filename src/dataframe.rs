@@ -37,7 +37,7 @@ impl Column {
 
 /// An enumeration of the possible `SoR` data types, that also contains the
 /// data itself.
-#[derive(PartialEq, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, DeepSizeOf)]
 pub enum Data {
     /// A `String` cell.
     String(String),

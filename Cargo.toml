@@ -23,7 +23,7 @@ lto = true
 
 [dev-dependencies]
 criterion = "0.3.1"
-bytecount = { version = "0.6.0", features = ["runtime-dispatch-simd", "generic-simd"] }
+bytecount = "0.6.0"
 
 [lib]
 bench = false
