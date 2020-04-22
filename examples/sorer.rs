@@ -253,8 +253,7 @@ OPTIONS:
         --len <len>      The ending byte offset in the file to stop parsing at [default: 4294967295]
 
 SUBCOMMANDS:
-    help              Prints this message or the help of the given subcommand(s)
-    is-missing-idx    Prints '1' if the data at the given column, row index is 'missing' or '1' if it is present
-    print-col-idx     Prints the value at the given column, row index
-    print-col-type    Prints the data type of the column at the given column index
+    --is-missing-idx <col-idx> <row-idx>   Prints '1' if the data at the given column, row index is 'missing' or '1' if it is present
+    --print-col-idx <col-idx> <row-idx>    Prints the value at the given column, row index
+    --print-col-type <col-idx>             Prints the data type of the column at the given column index
 ";
