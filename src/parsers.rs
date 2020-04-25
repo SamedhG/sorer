@@ -1,48 +1,45 @@
 //! A module for parsing raw byte slices into `SoR` data.
-
-use nom::error::ErrorKind;
-
-use std::str::from_utf8_unchecked;
-
+use crate::dataframe::Column;
+use crate::schema::DataType;
 use nom::branch::alt;
 use nom::bytes::complete::{is_not, tag};
 use nom::character::complete::{digit1, multispace0};
 use nom::combinator::{map, opt};
-use nom::multi::many0;
+use nom::error::ErrorKind;
 use nom::number::complete::double;
 use nom::sequence::{delimited, preceded, terminated, tuple};
 use nom::IResult;
-
-use crate::dataframe::Data;
-use crate::schema::DataType;
+use std::str::from_utf8_unchecked;
 
 #[inline(always)]
-fn left_angle_bracket(i: &[u8]) -> IResult<&[u8], &[u8]> {
-    terminated(tag("<"), multispace0)(i)
+fn left_angle_bracket(i: &[u8]) -> IResult<&[u8], ()> {
+    let (remaining, _) = terminated(tag("<"), multispace0)(i)?;
+    Ok((remaining, ()))
 }
 
 #[inline(always)]
-fn right_angle_bracket(i: &[u8]) -> IResult<&[u8], &[u8]> {
-    preceded(multispace0, tag(">"))(i)
+fn right_angle_bracket(i: &[u8]) -> IResult<&[u8], ()> {
+    let (remaining, _) = preceded(multispace0, tag(">"))(i)?;
+    Ok((remaining, ()))
 }
 
 #[inline(always)]
-fn parse_bool(i: &[u8]) -> IResult<&[u8], Data> {
+fn parse_bool(i: &[u8]) -> IResult<&[u8], bool> {
     let (remaining_input, b) = alt((tag("1"), tag("0")))(i)?;
     match b {
-        b"1" => Ok((remaining_input, Data::Bool(true))),
-        b"0" => Ok((remaining_input, Data::Bool(false))),
+        b"1" => Ok((remaining_input, true)),
+        b"0" => Ok((remaining_input, false)),
         _ => unreachable!(),
     }
 }
 
 #[inline(always)]
-fn parse_delimited_bool(i: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn parse_delimited_bool(i: &[u8]) -> IResult<&[u8], bool> {
     delimited(left_angle_bracket, parse_bool, right_angle_bracket)(i)
 }
 
 #[inline(always)]
-fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
+fn parse_int(i: &[u8]) -> IResult<&[u8], i64> {
     let (remaining_input, (sign, number)) =
         tuple((opt(alt((tag("+"), tag("-")))), digit1))(i)?;
     let multiplier = match sign {
@@ -54,99 +51,52 @@ fn parse_int(i: &[u8]) -> IResult<&[u8], Data> {
     // not unsafe because the spec guarantees only ascii characters in any field
     let num = unsafe { from_utf8_unchecked(number) }.parse::<i64>();
     match num {
-        Ok(n) => Ok((remaining_input, Data::Int(n * multiplier))),
+        Ok(n) => Ok((remaining_input, n * multiplier)),
         Err(_) => Err(nom::Err::Error((i, ErrorKind::Digit))),
     }
 }
 
 #[inline(always)]
-fn parse_delimited_int(i: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn parse_delimited_int(i: &[u8]) -> IResult<&[u8], i64> {
     delimited(left_angle_bracket, parse_int, right_angle_bracket)(i)
 }
 
 #[inline(always)]
-fn parse_string(i: &[u8]) -> IResult<&[u8], Data> {
+fn parse_string(i: &[u8]) -> IResult<&[u8], String> {
     // not unsafe because the spec guarantees only ascii characters in any field
     map(
         alt((delimited(tag("\""), is_not("\""), tag("\"")), is_not(" >"))),
-        |s: &[u8]| {
-            Data::String(match s {
-                b"\"\"" => String::from(""),
-                _ => String::from(unsafe { from_utf8_unchecked(s) }),
-            })
+        |s: &[u8]| match s {
+            b"\"\"" => String::from(""),
+            _ => String::from(unsafe { from_utf8_unchecked(s) }),
         },
     )(i)
 }
 
 #[inline(always)]
-fn parse_delimited_string(i: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn parse_delimited_string(i: &[u8]) -> IResult<&[u8], String> {
     delimited(left_angle_bracket, parse_string, right_angle_bracket)(i)
 }
 
 #[inline(always)]
-fn parse_float(i: &[u8]) -> IResult<&[u8], Data> {
-    map(double, Data::Float)(i)
+fn parse_float(i: &[u8]) -> IResult<&[u8], f64> {
+    double(i)
 }
 
 #[inline(always)]
-fn parse_delimited_float(i: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn parse_delimited_float(i: &[u8]) -> IResult<&[u8], f64> {
     delimited(left_angle_bracket, parse_float, right_angle_bracket)(i)
 }
 
 #[inline(always)]
-fn parse_null(i: &[u8]) -> IResult<&[u8], Data> {
-    map(multispace0, |_| Data::Null)(i)
+fn parse_null(i: &[u8]) -> IResult<&[u8], ()> {
+    let (remaining, _) = multispace0(i)?;
+    Ok((remaining, ()))
 }
 
 #[inline(always)]
-fn parse_delimited_null(i: &[u8]) -> IResult<&[u8], Data> {
+pub(crate) fn parse_delimited_null(i: &[u8]) -> IResult<&[u8], ()> {
     delimited(left_angle_bracket, parse_null, right_angle_bracket)(i)
-}
-
-fn parse_field(i: &[u8]) -> IResult<&[u8], Data> {
-    alt((
-        parse_delimited_null,
-        parse_delimited_bool,
-        parse_delimited_int,
-        parse_delimited_float,
-        parse_delimited_string,
-    ))(i)
-}
-
-/// Parses a row of `SoR` data, `i` (as a `&[u8]`), into a `Option<Vec<Data>>`
-/// Returning `Some` if `i` was a valid sor row, `None` otherwise. It parses
-/// using the most conservative precedence possible. Types `bool`  are parsed
-/// first, then `int`, then `float`, then `string`.
-/// If a field is invalid, returns a `None`.
-///
-/// # Examples
-/// ```
-/// use sorer::parsers::parse_line;
-/// use sorer::dataframe::Data;
-/// let i = b"< 1 > < hi >< +2.2 >";
-///
-/// assert_eq!(Some(vec![Data::Bool(true),
-///                  Data::String(String::from("hi")),
-///                  Data::Float(2.2)]),
-///            parse_line(i));
-/// ```
-///
-/// # Safety
-/// This function calls `std::str::from_utf8_unchecked`, meaning that it does not check that the
-/// bytes passed to it are valid UTF-8. If this constraint is violated, undefined behavior results,
-/// as the rest of Rust assumes that &strs are valid UTF-8.
-///
-/// Since `SoR` files are guaranteed to only contain valid C++ strings, and thus only valid `utf-8`,
-/// then this constraint only applies to consumers of the crate and not users of the `SoRer`
-/// executable.
-pub fn parse_line(i: &[u8]) -> Option<Vec<Data>> {
-    let (remaining_input, data) =
-        many0(delimited(multispace0, parse_field, multispace0))(i).unwrap();
-    if remaining_input != b"" {
-        None
-    } else {
-        Some(data)
-    }
 }
 
 // NOTE: this is required since:
@@ -192,30 +142,44 @@ fn my_multispace(i: &[u8]) -> IResult<&[u8], &[u8]> {
 pub fn parse_line_with_schema(
     i: &[u8],
     schema: &[DataType],
-) -> Option<Vec<Data>> {
+    columnar: &mut Vec<Column>,
+) -> Option<()> {
     if i.is_empty() {
         return None;
     };
-    let mut result: Vec<Data> = Vec::with_capacity(schema.len() + 1);
     let mut remaining_input = i;
-    for column_type in schema {
+    let iter = columnar.iter_mut().zip(schema.iter());
+    for (column, column_type) in iter {
         let (x, _) = my_multispace(remaining_input).unwrap();
         remaining_input = x;
         if remaining_input == b"" {
-            result.push(Data::Null);
+            match column {
+                Column::Bool(c) => c.push(None),
+                Column::Int(c) => c.push(None),
+                Column::Float(c) => c.push(None),
+                Column::String(c) => c.push(None),
+            };
             continue;
         }
         match parse_delimited_null(remaining_input) {
-            Ok((rem, d)) => {
+            Ok((rem, _)) => {
                 remaining_input = rem;
-                result.push(d);
+                match column {
+                    Column::Bool(c) => c.push(None),
+                    Column::Int(c) => c.push(None),
+                    Column::Float(c) => c.push(None),
+                    Column::String(c) => c.push(None),
+                };
             }
             _ => match &column_type {
                 DataType::String => {
                     match parse_delimited_string(remaining_input) {
                         Ok((x, d)) => {
-                            result.push(d);
                             remaining_input = x;
+                            match column {
+                                Column::String(c) => c.push(Some(d)),
+                                _ => unreachable!(),
+                            };
                         }
                         _ => return None,
                     }
@@ -223,29 +187,38 @@ pub fn parse_line_with_schema(
                 DataType::Float => match parse_delimited_float(remaining_input)
                 {
                     Ok((x, d)) => {
-                        result.push(d);
                         remaining_input = x;
+                        match column {
+                            Column::Float(c) => c.push(Some(d)),
+                            _ => unreachable!(),
+                        };
                     }
                     _ => return None,
                 },
                 DataType::Int => match parse_delimited_int(remaining_input) {
                     Ok((x, d)) => {
-                        result.push(d);
                         remaining_input = x;
+                        match column {
+                            Column::Int(c) => c.push(Some(d)),
+                            _ => unreachable!(),
+                        };
                     }
                     _ => return None,
                 },
                 DataType::Bool => match parse_delimited_bool(remaining_input) {
                     Ok((x, d)) => {
-                        result.push(d);
                         remaining_input = x;
+                        match column {
+                            Column::Bool(c) => c.push(Some(d)),
+                            _ => unreachable!(),
+                        };
                     }
                     _ => return None,
                 },
             },
         }
     }
-    Some(result)
+    Some(())
 }
 
 #[cfg(test)]

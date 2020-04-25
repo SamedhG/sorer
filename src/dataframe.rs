@@ -1,8 +1,8 @@
 //! This module defines functions to parse a `SoR` file into a columnar
 //! format as a `Vec<Column>`.
-
 use crate::parsers::parse_line_with_schema;
 use crate::schema::DataType;
+use bytecount;
 use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 use std::convert::{From, TryFrom};
@@ -160,6 +160,9 @@ pub fn from_file(
         buffer.clear();
     }
 
+    let new_lines = count_new_lines(file_path);
+    let max_per_chunk = (new_lines as f64 / num_threads as f64).ceil() as usize;
+
     // initialize the threads with their own BufReader
     let mut threads = Vec::new();
     for w in work {
@@ -169,12 +172,13 @@ pub fn from_file(
         // spawn the thread and give it a closure which calls `from_file`
         // to parse the data into columnar format.
         threads.push(thread::spawn(move || {
-            read_chunk(new_schema, &mut r, w.0, w.1)
+            read_chunk(new_schema, &mut r, w.0, w.1, max_per_chunk)
         }));
     }
 
     // initialize the resulting columnar data frame
     let mut parsed_data: Vec<Column> = init_columnar(&schema);
+    parsed_data.reserve(new_lines);
     // let all the threads finish then combine the parsed data into the
     // columnar data frame
     for t in threads {
@@ -237,6 +241,7 @@ fn read_chunk<T>(
     reader: &mut T,
     from: usize,
     len: usize,
+    max_rows: usize,
 ) -> Vec<Column>
 where
     T: BufRead + Seek,
@@ -254,6 +259,7 @@ where
     };
 
     let mut parsed_data = init_columnar(&schema);
+    parsed_data.reserve(max_rows);
 
     loop {
         let line_len = reader.read_until(b'\n', &mut buffer).unwrap();
@@ -262,30 +268,9 @@ where
             break;
         }
 
-        // parse line with schema and place into the columnar vec here
-        match parse_line_with_schema(&buffer[..], &schema) {
-            None => {
-                buffer.clear();
-                continue;
-            }
-            Some(data) => {
-                let iter = data.iter().zip(parsed_data.iter_mut());
-                for (d, col) in iter {
-                    match (d, col) {
-                        (Data::Bool(b), Column::Bool(c)) => c.push(Some(*b)),
-                        (Data::Int(i), Column::Int(c)) => c.push(Some(*i)),
-                        (Data::Float(f), Column::Float(c)) => c.push(Some(*f)),
-                        (Data::String(s), Column::String(c)) => {
-                            c.push(Some(s.clone()))
-                        }
-                        (Data::Null, Column::Bool(c)) => c.push(None),
-                        (Data::Null, Column::Int(c)) => c.push(None),
-                        (Data::Null, Column::Float(c)) => c.push(None),
-                        (Data::Null, Column::String(c)) => c.push(None),
-                        _ => panic!("Parser Failed"),
-                    }
-                }
-            }
+        match parse_line_with_schema(&buffer[..], &schema, &mut parsed_data) {
+            None => (),
+            Some(()) => (),
         }
         buffer.clear();
     }
@@ -332,7 +317,8 @@ impl Iterator for SorTerator {
     /// `next` may have less than `chunk_size` number of rows and it is up to
     /// the caller to verify the length if needed.
     fn next(&mut self) -> Option<Self::Item> {
-        let mut parsed_data = init_columnar(&self.schema);
+        let parsed_data = init_columnar(&self.schema);
+        /*
         while let Some(Ok(line)) = self.buf_reader.next() {
             match parse_line_with_schema(&line, &self.schema) {
                 None => continue,
@@ -365,6 +351,7 @@ impl Iterator for SorTerator {
                 }
             }
         }
+        */
         if parsed_data.get(0).unwrap_or(&self.empty_col).len() > 0 {
             Some(parsed_data)
         } else {
@@ -457,6 +444,21 @@ impl fmt::Display for Data {
             Data::Bool(false) => write!(f, "0"),
             Data::Null => write!(f, "Missing Value"),
         }
+    }
+}
+
+fn count_new_lines(file_name: &str) -> usize {
+    let mut buf_reader = BufReader::new(File::open(file_name).unwrap());
+    let mut new_lines = 0;
+
+    loop {
+        let bytes_read = buf_reader.fill_buf().unwrap();
+        let len = bytes_read.len();
+        if len == 0 {
+            return new_lines;
+        };
+        new_lines += bytecount::count(bytes_read, b'\n');
+        buf_reader.consume(len);
     }
 }
 
