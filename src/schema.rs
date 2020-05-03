@@ -3,11 +3,10 @@ use crate::dataframe::Data;
 use crate::parsers::parse_line;
 use deepsize::DeepSizeOf;
 use easy_reader::EasyReader;
-use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::fs::{self, File};
+use std::io::{self, BufRead, BufReader, Seek, SeekFrom};
 
 /// A plain enumeration of the possible data types used in `SoR`, this one
 /// without its accompanying value.
@@ -43,7 +42,7 @@ fn get_dominant_data_type(
 /// Full information on how schema inference works can be found
 /// [here](../index.html#schema-inference)
 pub fn infer_schema(file_name: &str) -> Result<Vec<DataType>, io::Error> {
-    infer_schema_for_n_lines(file_name, 500)
+    infer_schema_for_n_lines(file_name, 300)
 }
 
 /// Infers the schema of the file opened by the given `reader`.
@@ -53,43 +52,47 @@ pub(crate) fn infer_schema_for_n_lines(
     file_name: &str,
     num_lines_to_parse: usize,
 ) -> Result<Vec<DataType>, io::Error> {
-    let book_end = 10;
-    let mut parsed_lines = Vec::with_capacity(num_lines_to_parse);
-    let reader = BufReader::new(File::open(file_name)?).split(b'\n');
-    let mut rng = rand::thread_rng();
-    let mut cur_width = 0;
+    let book_end = num_lines_to_parse / 3;
+    let mut parsed_lines = Vec::new();
+    let mut reader = BufReader::new(File::open(file_name)?).split(b'\n');
 
-    // parse the first 10 lines (if there are 5 lines, for example, then the
-    // loop will only run 5 times)
-    let first_book_end = reader.take(book_end);
-    for line in first_book_end {
-        handle_line_inference(&line?, &mut parsed_lines, &mut cur_width);
+    // infer the schema at the beginning
+    let mut i = 0;
+    while let Some(line) = reader.next() {
+        handle_line_inference(&line?, &mut parsed_lines);
+        i += 1;
+        if i == book_end {
+            break;
+        }
     }
 
-    // generate num_lines - 20 indices as random lines to try to parse
-    let reader = BufReader::new(File::open(file_name)?).split(b'\n');
-    let rand_lines =
-        reader.choose_multiple(&mut rng, num_lines_to_parse - book_end * 2);
-    for rand_line in rand_lines {
-        handle_line_inference(&rand_line?, &mut parsed_lines, &mut cur_width);
+    // seek to middle and to infer the schema in the middle
+    let mid_pt = fs::metadata(file_name)?.len() / 2;
+    let mut f = File::open(file_name)?;
+    f.seek(SeekFrom::Start(mid_pt))?;
+    let mut reader = BufReader::new(f).split(b'\n');
+    i = 0;
+    while let Some(line) = reader.next() {
+        handle_line_inference(&line?, &mut parsed_lines);
+        i += 1;
+        if i == book_end {
+            break;
+        }
     }
 
     // parse the end of the file
     let mut backward_reader = EasyReader::new(File::open(file_name)?)?;
     backward_reader.eof();
-    let mut num_rev_lines = 0;
+    i = 0;
     while let Some(line) = backward_reader.prev_line()? {
-        handle_line_inference(
-            &line.as_bytes(),
-            &mut parsed_lines,
-            &mut cur_width,
-        );
-        num_rev_lines += 1;
-        if num_rev_lines == book_end {
+        handle_line_inference(&line.as_bytes(), &mut parsed_lines);
+        i += 1;
+        if i == book_end {
             break;
         }
     }
 
+    let cur_width = parsed_lines.get(0).unwrap_or_else(|| EMPTY).len();
     let mut schema = Vec::with_capacity(cur_width);
     for i in 0..cur_width {
         let mut data_type = DataType::Bool;
@@ -101,42 +104,27 @@ pub(crate) fn infer_schema_for_n_lines(
         }
         schema.push(data_type);
     }
+
     Ok(schema)
 }
 
-fn handle_line_inference(
-    i: &[u8],
-    current_lines: &mut Vec<Vec<Data>>,
-    cur_width: &mut usize,
-) {
+const EMPTY: &Vec<Data> = &Vec::new();
+
+fn handle_line_inference(i: &[u8], current_lines: &mut Vec<Vec<Data>>) {
     if let Some(parsed) = parse_line(i) {
-        match parsed.len().cmp(&cur_width) {
+        match parsed
+            .len()
+            .cmp(&current_lines.get(0).unwrap_or_else(|| EMPTY).len())
+        {
             Ordering::Greater => {
-                *cur_width = parsed.len();
                 current_lines.clear();
                 current_lines.push(parsed);
             }
             Ordering::Equal => {
-                *cur_width = parsed.len();
                 current_lines.push(parsed);
             }
             Ordering::Less => (),
         }
-    }
-}
-
-fn count_new_lines(file_name: &str) -> Result<usize, io::Error> {
-    let mut buf_reader = BufReader::new(File::open(file_name)?);
-    let mut new_lines = 0;
-
-    loop {
-        let bytes_read = buf_reader.fill_buf()?;
-        let len = bytes_read.len();
-        if len == 0 {
-            return Ok(new_lines);
-        };
-        new_lines += bytecount::count(bytes_read, b'\n');
-        buf_reader.consume(len);
     }
 }
 
