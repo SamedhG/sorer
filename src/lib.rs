@@ -1,10 +1,10 @@
 //! # SoRer
-//! `SoRer`, short for schema-on-read-er, is a program that can read files in
-//! the SoR format and build columnar dataframes based on a dynamically
-//! inferred schema.
+//! `SoRer`, short for schema-on-read-er, is a library that can infer a schema,
+//! parse `.sor` files into a columnar representation according to the schema,
+//! and handle missing data and (most cases of) malformed data.
 //!
-//! `SoRer` was built with speed and memory efficiency in mind so it can handle
-//! processing files that are too large to fit into RAM.
+//! `SoRer` was built with speed and memory efficiency in mind and file parsing
+//! is multi-threaded.
 //!
 //! On our 2 year old desktop computer with a SATA SSD (meaning our testing is
 //! likely near being bottlenecked by ssd read speeds) and 4 cores (4 threads),
@@ -122,12 +122,13 @@
 //!
 //! # Schema Inference
 //! The schema that `SoRer` generates depends on the data types contained in
-//! the row with the most number of fields in the first 500 rows (or
-//! the whole file, whichever comes first), irregardless of
-//! the `-from` command line argument. The data type chosen for
-//! each column in the schema depends on the precedence of the data type.
-//! Based on this data type precedence, a schema is inferred and then applied
-//! to all fields in that column.
+//! the row with the most number of fields in the first 100 rows, followed by
+//! 100 rows from the mid-point of the file, and finally with the final 100
+//! rows (or the whole file, whichever comes first). In the `sorer` example,
+//! these rows are used irregardless of the `--from` command line argument. The
+//! data type chosen for each column in the schema is the highest-precedence
+//! data type that was seen in all the rows that were equal to the width of
+//! the widest row.
 //!
 //! The Data Type precedence is as follows:
 //! 1. `String`
@@ -136,10 +137,11 @@
 //! 4. `Bool`
 //!
 //! This means that if any value is a `String`, the whole column is parsed
-//! into a `String` type. Otherwise, if any of the values is a `Float`, then the
-//!  column is of `Float` type. Otherwise, if you find a value with a sign or a
-//! value larger than `1`, then the column is `Integer`. Otherwise the column
-//!  is a `Bool` type.
+//! into a `String` type. Otherwise, if any of the values is a `Float`, then
+//! the column is of `Float` type. Otherwise, if you find a value with a sign
+//! or a value larger than `1`, then the column is `Integer`. Otherwise the
+//! column is a `Bool` type, even if there were only explicit 'missings' and no
+//! data.
 //!
 //! ## Rows that don't match the schema
 //! If a row that doesn't match the schema is found after the schema is

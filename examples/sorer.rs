@@ -16,7 +16,7 @@ fn main() {
         _ => (),
     };
 
-    let schema = infer_schema(&parsed_args.file.clone());
+    let schema = infer_schema(&parsed_args.file.clone()).unwrap();
     match &parsed_args.option {
         Options::PrintColType(col_idx) => {
             if *col_idx >= schema.len() {
