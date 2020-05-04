@@ -22,7 +22,7 @@ fn buff_byte_count(file_name: &str) -> usize {
 // An example of using the `SorTerator` for chunking SoR files
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let schema = schema::infer_schema(&args[1]);
+    let schema = schema::infer_schema(&args[1]).unwrap();
     let total_newlines = buff_byte_count(&args[1]);
     let max_rows_per_chunk = total_newlines / 8;
     let mut sor_terator = SorTerator::new(&args[1], schema, max_rows_per_chunk);

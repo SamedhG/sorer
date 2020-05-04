@@ -71,6 +71,9 @@ pub(crate) fn infer_schema_for_n_lines(
     let mut f = File::open(file_name)?;
     f.seek(SeekFrom::Start(mid_pt))?;
     let mut reader = BufReader::new(f).split(b'\n');
+    // throw away the first line since we started somewhere randomly in the
+    // middle
+    reader.next();
     i = 0;
     while let Some(line) = reader.next() {
         handle_line_inference(&line?, &mut parsed_lines);
@@ -125,43 +128,5 @@ fn handle_line_inference(i: &[u8], current_lines: &mut Vec<Vec<Data>>) {
             }
             Ordering::Less => (),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::Cursor;
-
-    #[test]
-    fn infer_schema_test() {
-        // Design decisions demonstrated by this test:
-        // Null only columns are typed as a Bool
-        let input = Cursor::new(b"<1><hello><>\n<12><1.2><>");
-        let schema = infer_schema_from_reader(input);
-        assert_eq!(
-            schema,
-            vec![DataType::Int, DataType::String, DataType::Bool]
-        );
-
-        let uses_row_w_most_fields =
-            Cursor::new(b"<1>\n<hello><0>\n<1.1><0><2>");
-        let schema2 = infer_schema_from_reader(uses_row_w_most_fields);
-        assert_eq!(
-            schema2,
-            vec![DataType::Float, DataType::Bool, DataType::Int]
-        );
-
-        let type_precedence = Cursor::new(b"<0><3><3.3><str>\n<3><5.5><r><h>");
-        let schema3 = infer_schema_from_reader(type_precedence);
-        assert_eq!(
-            schema3,
-            vec![
-                DataType::Int,
-                DataType::Float,
-                DataType::String,
-                DataType::String
-            ]
-        );
     }
 }
