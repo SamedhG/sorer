@@ -1,10 +1,10 @@
 # SoRer
-`SoRer`, short for schema-on-read-er, is a program that can read files in
-the SoR format and build columnar dataframes based on a dynamically
-inferred schema.
+`SoRer`, short for schema-on-read-er, is a library that can infer a schema,
+parse `.sor` files into a columnar representation according to the schema,
+and handle missing data and (most cases of) malformed data.
 
-`SoRer` was built with speed and memory efficiency in mind so it can handle
-processing files that are too large to fit into RAM.
+`SoRer` was built with speed and memory efficiency in mind and file parsing
+is multi-threaded.
 
 On our 2 year old desktop computer with a SATA SSD (meaning our testing is
 likely near being bottlenecked by ssd read speeds) and 4 cores (4 threads),
@@ -15,11 +15,9 @@ you must install rust if you want to do this due to file i/o overhead when
 using Docker). In a best case scenario, on a large file with 3 columns of
 random bools, it can parse at over `700 MB/s`
 
-![Perf](perf.png)
-
 # Usage
 ## Building SoRer
-`SoRer` can be built on any computer by running the command: `make build`
+`SoRer` can be built on any computer by running the command: `make docker`
 from the root of this repository. This builds a Docker image tagged as `sorer`.
 It also builds the executable for `sorer`, located at
 `/sorer/target/release/sorer` and copies over the executable to the current directory.
@@ -27,7 +25,12 @@ It also builds the executable for `sorer`, located at
 Tests can be ran by running the command `make test`. The program can be ran
 against a small test file named `sor.txt` by running the command: `make run`.
 
-Note that ideally the best way to run our program is bare metal due to 
+Documentation can be built by running the command `make doc`. This builds the
+documentation and copies it to `./doc/` on the host filesystem in this directory.
+This documentation can be viewed by opening `./doc/sorer/index.html` in
+your broswer.
+
+Note that ideally the best way to run our program is bare metal due to
 overhead for using Docker (especially on Windows or Mac). You can do that by
 installing `rust` by running the following command:
 
@@ -37,15 +40,8 @@ Follow the printed instructions to source the cargo environment variables after
 installing.
 
 Then build `sorer` by running `cargo build --release`. You may test the
-program after installing `rust` by running `cargo test`. Documentation may 
+program after installing `rust` by running `cargo test`. Documentation may
 be built by running `cargo doc --no-deps --open`.
-
-## SoRer Documentation
-
-Documentation can be built by running the command `make doc`. This builds the
-documentation and copies it to `./doc/` on the host filesystem in this directory.
-This documentation can be viewed by opening `./doc/sorer/index.html` in
-your broswer.
 
 ## Running SoRer
 `SoRer` is ran as a command line tool that prints its results to `stdout`.
@@ -67,13 +63,11 @@ starting from the first complete line after `<val>`.
 When `<val>` in `-len <val>` is greater than 0, then the file is read
 up until the last complete line.
 
-After running `make build`, running `make bash` will mount the current 
+After running `make build`, running `make bash` will mount the current
 the current directory to the docker container and start bash. If you
 want to test any large files, you should do `make build` first, then copy
 the files into this directory, then run `make bash`. Once you're in bash,
 you can interact with `sorer` as usual:
-
-E.g.: `./sorer -f sor.txt -from 0 -len 100000 -print_col_idx 0 0`
 
 
 # SoR Files
@@ -82,9 +76,8 @@ each row must be separated by the newline character, "\n".
 Each row is a sequence of fields, each field starting with "<" and ending
 with ">". Spaces around delimiters are ignored.
 
-
 # SoR Fields
-A field can be either missing a value, or contain a value of one of four
+ A field can be either missing a value, or contain a value of one of four
  SoR types:
 - `String`
 - `Float`
@@ -93,7 +86,8 @@ A field can be either missing a value, or contain a value of one of four
 
 |Type   |Allowed values   |
 |:-:|:-:|
-| String  | Either as a sequences of characters without spaces or as a double quote delimited sequence of characters with spaces. Line breaks are not allowed in Strings. Can't be longer than 255 characters.  | Float  | Any C++ float    |
+| String  | Either as a sequences of characters without spaces or as a double quote delimited sequence of characters with spaces. Line breaks are not allowed in Strings. Can't be longer than 255 characters. Must be valid `utf-8` characters. |
+| Float  | Any C++ float    |
 | Integer  | Any C++ integer, ie a sequence of digits with an optional leading sign (must not be separated by whitespace)   |
 |bool   | {1, 0}  |
 | Missing (aka Null)  | must be empty, ie "<>"  |
@@ -104,13 +98,13 @@ A field can be either missing a value, or contain a value of one of four
 The following is an example of a row with four fields:
 
 `< 1 > < hi >< +2.2 >   < " bye ">`
- 
+
 The following is an example of a row with explicit missing fields:
- 
+
 `<1> <bye> <> <>`
- 
+
 The following is also valid:
- 
+
 `<> <> <> <>`
 
 ## Invalid Examples of SoR Fields
@@ -124,16 +118,17 @@ The following is also valid:
 ```
 
 NOTE: If a SoR file contains an invalid field, the row will be discarded
- for both schema inference and data parsing.
+for both schema inference and data parsing.
 
 # Schema Inference
 The schema that `SoRer` generates depends on the data types contained in
-the row with the most number of fields in the first 500 rows (or 
-the whole file, whichever comes first), irregardless of
-the `-from` command line argument. The data type chosen for
-each column in the schema depends on the precedence of the data type. 
-Based on this data type precedence, a schema is inferred and then applied
-to all fields in that column.
+the row with the most number of fields in the first 100 rows, followed by
+100 rows from the mid-point of the file, and finally with the final 100
+rows (or the whole file, whichever comes first). In the `sorer` example,
+these rows are used irregardless of the `--from` command line argument. The
+data type chosen for each column in the schema is the highest-precedence
+data type that was seen in all the rows that were equal to the width of
+the widest row.
 
 The Data Type precedence is as follows:
 1. `String`
@@ -142,10 +137,11 @@ The Data Type precedence is as follows:
 4. `Bool`
 
 This means that if any value is a `String`, the whole column is parsed
-into a `String` type. Otherwise, if any of the values is a `Float`, then the
-column is of `Float` type. Otherwise, if you find a value with a sign or a
-value larger than `1`, then the column is `Integer`. Otherwise the column
-is a `Bool` type.
+into a `String` type. Otherwise, if any of the values is a `Float`, then
+the column is of `Float` type. Otherwise, if you find a value with a sign
+or a value larger than `1`, then the column is `Integer`. Otherwise the
+column is a `Bool` type, even if there were only explicit 'missings' and no
+data.
 
 ## Rows that don't match the schema
 If a row that doesn't match the schema is found after the schema is
@@ -154,19 +150,23 @@ An example is if a schema is parsed as `<int> <int>`,  but a line coming
 after the first 500 has `<string> <int>`, then it will be discarded.
 
 **Note** however, that it is valid for two rows in the same file to have a
-different number of fields and still be considered to match the schema. 
-For rows with more fields than the schema, the extra fields will be 
+different number of fields and still be considered to match the schema.
+For rows with more fields than the schema, the extra fields will be
 discarded but the row will still be parsed as long as the other fields
 match the schema.
- 
+
 E.g. The schema: `<int> <bool>` and a row: `<12> <0> <discarded>`
 parses to `<12><0>`
- 
- 
+
+
 If a row has less fields without explicit missing fields (i.e. "<>"), aka
-implicit missing fields, `SoRer` will attempt to parse the fields 
+implicit missing fields, `SoRer` will attempt to parse the fields
 according to the schema and fill in explicit missing fields at the end
 of the row until it matches the number of fields in the schema.
- 
+
 E.g. The schema: `<int> <bool> <string>` and a row: `<12>`
 parses to `<12><><>`
+
+pub mod dataframe;
+pub mod parsers;
+pub mod schema;
