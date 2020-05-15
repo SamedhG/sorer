@@ -24,6 +24,7 @@ lto = true
 [dev-dependencies]
 criterion = "0.3.1"
 bytecount = "0.6.0"
+clap = { git = "https://github.com/clap-rs/clap/" }
 
 [lib]
 bench = false
