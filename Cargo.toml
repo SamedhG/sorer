@@ -1,6 +1,6 @@
 [package]
 name = "sorer"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Thomas Harmon <harmon.t@husky.neu.edu>", "Samedh Gupta <gupta.sam@husky.neu.edu>"]
 edition = "2018"
 license = "MIT"
